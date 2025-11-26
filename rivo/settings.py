@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-3@4xu!)7m2-zc%rmr49kpkd_b1z4@yzwvk#v+wo4b!!@x=c=ns
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'account.User'
 
@@ -53,6 +53,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CSRF_TRUSTED_ORIGINS = ['https://*.replit.dev', 'https://*.repl.co']
+X_FRAME_OPTIONS = 'ALLOWALL'
 
 ROOT_URLCONF = 'rivo.urls'
 
