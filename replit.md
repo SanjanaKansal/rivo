@@ -28,7 +28,7 @@ rivo/
 - Python 3.11
 - Django 4.2.26
 - Django REST Framework 3.14.0
-- SQLite database (development)
+- PostgreSQL database (Supabase)
 - Gunicorn (production deployment)
 
 ## API Endpoints
@@ -43,7 +43,8 @@ rivo/
 
 ### Admin Interface
 - `/admin/` - Django admin interface
-  - User and Role management (via Django Admin)
+  - User and Role management
+  - Chat History management
   - Note: Client models are not yet registered in admin
 
 ## Database Models
@@ -69,7 +70,7 @@ The project is configured to run on Replit with:
 - Django development server on port 5000
 - ALLOWED_HOSTS set to accept all hosts (required for Replit proxy)
 - CSRF trusted origins configured for Replit domains (HTTP and HTTPS)
-- SQLite database for development
+- PostgreSQL database (Supabase connection pooler)
 - X_FRAME_OPTIONS set to SAMEORIGIN for security
 
 ## Environment Variables
@@ -87,6 +88,9 @@ The application supports the following environment variables:
 - `ALLOWED_HOSTS` - Comma-separated list of allowed hostnames (optional)
   - Development fallback: Accepts all hosts ('*')
   - Production: Set to your deployment domain(s), e.g., 'yourdomain.replit.app,yourdomain.com'
+
+- `DATABASE_URL` - PostgreSQL connection string (required)
+  - Currently connected to Supabase PostgreSQL via connection pooler
 
 ## Security Notes
 
@@ -110,6 +114,11 @@ The project is configured for deployment using:
 - The deployment uses: `gunicorn --bind=0.0.0.0:5000 --reuse-port rivo.wsgi:application`
 
 ## Recent Changes
+
+- November 26, 2025: Connected to Supabase PostgreSQL
+  - Configured DATABASE_URL with Supabase connection pooler
+  - Ran migrations on Supabase database
+  - Chat admin already registered
 
 - November 26, 2025: Initial Replit environment setup
   - Configured Django settings for Replit
