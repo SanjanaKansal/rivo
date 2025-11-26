@@ -45,7 +45,7 @@ rivo/
 - `/admin/` - Django admin interface
   - User and Role management
   - Chat History management
-  - Note: Client models are not yet registered in admin
+  - Client management (Clients, Context, Stage History, Assignments)
 
 ## Database Models
 
