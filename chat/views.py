@@ -132,7 +132,7 @@ class ChatViewSet(viewsets.ViewSet):
 
         ClientStageHistory.objects.create(
             client=client,
-            from_stage=None,
+            from_stage='',
             to_stage='lead',
             changed_by=None,  # System-generated, no user
             remarks='Client information collected via chat. Ready for assignment.'

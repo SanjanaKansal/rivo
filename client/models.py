@@ -61,12 +61,13 @@ class ClientStageHistory(BaseModel):
         on_delete=models.CASCADE,
         related_name='stage_history'
     )
-    from_stage = models.CharField(max_length=50, blank=True)
+    from_stage = models.CharField(max_length=50, blank=True, null=True)
     to_stage = models.CharField(max_length=50)
     changed_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         related_name='stage_changes',
         help_text="User who made this stage change"
     )
