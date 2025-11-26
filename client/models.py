@@ -46,54 +46,10 @@ class Client(BaseModel):
     def __str__(self):
         return f"{self.name} - {self.current_stage}"
 
-
-class ClientContext(BaseModel):
-    """
-    Stores context/information about the client from lead phase
-    Uses JSON field for flexible context storage
-    """
-    client = models.OneToOneField(
-        Client,
-        on_delete=models.CASCADE,
-        related_name='context',
-        help_text="Client this context belongs to"
-    )
-    chat_session_id = models.UUIDField(
-        null=True,
-        blank=True,
-        db_index=True,
-        help_text="Link to chat session if lead came from chatbot"
-    )
-    context_data = models.JSONField(
-        default=dict,
-        help_text="JSON field to store any context information"
-    )
-
-    class Meta:
-        db_table = 'client_context'
-        verbose_name = _('client context')
-        verbose_name_plural = _('client contexts')
-        indexes = [
-            models.Index(fields=['client']),
-            models.Index(fields=['chat_session_id']),
-        ]
-
-    def __str__(self):
-        return f"Context for {self.client.name}"
-
-    def get_value(self, key, default=None):
-        """Safely get a value from context_data"""
-        return self.context_data.get(key, default)
-
-    def set_value(self, key, value):
-        """Set a value in context_data"""
-        self.context_data[key] = value
-        self.save(update_fields=['context_data', 'updated_at'])
-
-    def update_data(self, data_dict):
-        """Update multiple values at once"""
-        self.context_data.update(data_dict)
-        self.save(update_fields=['context_data', 'updated_at'])
+    @property
+    def is_complete(self):
+        """Helper to check if info is complete"""
+        return all([self.name, self.email, self.phone])
 
 
 class ClientStageHistory(BaseModel):

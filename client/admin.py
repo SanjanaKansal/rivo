@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Client, ClientContext, ClientStageHistory, ClientAssignment
+from .models import Client, ClientStageHistory, ClientAssignment
 
 
 @admin.register(Client)
@@ -7,13 +7,6 @@ class ClientAdmin(admin.ModelAdmin):
     list_display = ['name', 'email', 'phone', 'current_stage', 'created_at']
     list_filter = ['current_stage', 'created_at']
     search_fields = ['name', 'email', 'phone']
-    readonly_fields = ['created_at', 'updated_at']
-
-
-@admin.register(ClientContext)
-class ClientContextAdmin(admin.ModelAdmin):
-    list_display = ['client', 'chat_session_id', 'created_at']
-    search_fields = ['client__name', 'chat_session_id']
     readonly_fields = ['created_at', 'updated_at']
 
 
