@@ -1,6 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from client.models import ClientStageHistory, ClientAssignment
 from .models import ChatHistory, Client
 from .serializers import ChatHistorySerializer, SendMessageSerializer
 import re
@@ -48,7 +50,16 @@ class ChatViewSet(viewsets.ViewSet):
         if data_type in ['name', 'email', 'phone']:
             if not client:
                 client = Client.objects.create()
+
+                ChatHistory.objects.filter(
+                    session_id=session_id,
+                    client__isnull=True
+                ).update(client=client)
+
             self._update_client_info(client, data_type, message)
+
+            if client.is_complete:
+                self._initialize_client_workflow(client)
 
         # Create the chat message
         chat_message = ChatHistory.objects.create(
@@ -106,5 +117,31 @@ class ChatViewSet(viewsets.ViewSet):
             client.email = message.strip().lower()
         elif data_type == 'phone':
             phone_clean = re.sub(r'\D', '', message)
-            client.phone_number = phone_clean
+            client.phone = phone_clean
         client.save()
+
+    def _initialize_client_workflow(self, client):
+        """
+        Initialize client workflow when info is complete:
+        - Create ClientStageHistory entry
+        - Create ClientAssignment entry
+        Only runs once to avoid duplicates
+        """
+        if ClientStageHistory.objects.filter(client=client).exists():
+            return
+
+        ClientStageHistory.objects.create(
+            client=client,
+            from_stage=None,
+            to_stage='lead',
+            changed_by=None,  # System-generated, no user
+            remarks='Client information collected via chat. Ready for assignment.'
+        )
+
+        # Create assignment (unassigned initially)
+        ClientAssignment.objects.create(
+            client=client,
+            assigned_to=None,
+            assigned_by=None,
+            remarks='Client created from chat - awaiting assignment'
+        )

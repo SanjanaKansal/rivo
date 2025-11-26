@@ -24,9 +24,9 @@ class Client(BaseModel):
         ('rejected', 'Rejected'),
     ]
 
-    name = models.CharField(max_length=255)
-    email = models.EmailField(db_index=True)
-    phone = models.CharField(max_length=20, db_index=True)
+    name = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(db_index=True, blank=True)
+    phone = models.CharField(max_length=20, db_index=True, blank=True)
     current_stage = models.CharField(
         max_length=50,
         choices=STAGE_CHOICES,
@@ -100,6 +100,8 @@ class ClientAssignment(BaseModel):
     assigned_to = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='assigned_clients',
         help_text="Customer Support user assigned to this client"
     )
