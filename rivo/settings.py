@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-3@4xu!)7m2-zc%rmr49kpkd_b1z4@yzwvk#v+wo4b!!@x=c=ns'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-3@4xu!)7m2-zc%rmr49kpkd_b1z4@yzwvk#v+wo4b!!@x=c=ns')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+# Allow all hosts in development, but restrict in production via environment variable
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',') if os.environ.get('ALLOWED_HOSTS') else ['*']
 
 AUTH_USER_MODEL = 'account.User'
 
@@ -54,8 +56,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CSRF_TRUSTED_ORIGINS = ['https://*.replit.dev', 'https://*.repl.co']
-X_FRAME_OPTIONS = 'ALLOWALL'
+CSRF_TRUSTED_ORIGINS = [
+    'http://*.replit.dev',
+    'https://*.replit.dev',
+    'http://*.repl.co',
+    'https://*.repl.co'
+]
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 ROOT_URLCONF = 'rivo.urls'
 
