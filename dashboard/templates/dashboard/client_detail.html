@@ -79,7 +79,7 @@
     .urgency-high { color: #e74c3c; font-weight: bold; }
 </style>
 
-<a href="{% if is_admin %}{% url 'dashboard:admin_dashboard' %}{% else %}{% url 'dashboard:csm_dashboard' %}{% endif %}" class="back-link">&larr; Back to Dashboard</a>
+<a href="{% url 'dashboard:home' %}" class="back-link">&larr; Back to Dashboard</a>
 
 <div class="page-header">
     <h1>{{ client.name|default:"Unnamed Client" }}</h1>
@@ -111,6 +111,7 @@
         </div>
     </div>
     
+    {% if perms.can_change_stage %}
     <div class="card">
         <div class="card-header">
             <h2>Change Stage</h2>
@@ -128,6 +129,7 @@
             <button type="submit" class="btn btn-success">Update Stage</button>
         </form>
     </div>
+    {% endif %}
 </div>
 
 {% if client.context %}

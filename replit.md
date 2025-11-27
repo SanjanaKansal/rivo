@@ -56,32 +56,25 @@ All endpoints require `Authorization: Token <token>` header (except login).
 **Authentication:**
 - `POST /api/v1/dashboard/login/` - Get auth token
   - Request: `{"email": "...", "password": "..."}`
-  - Response: `{"token": "...", "user": {...}}`
+  - Response: `{"token": "...", "user": {...}, "permissions": {...}}`
 
-**Admin Endpoints (requires Admin role):**
-- `GET /api/v1/dashboard/admin/clients/` - Get all clients
-- `GET /api/v1/dashboard/admin/csm-users/` - Get CSM users for assignment
-- `POST /api/v1/dashboard/admin/assign/` - Assign client to CSM
-  - Request: `{"client_id": 1, "csm_id": 2}`
-
-**CSM Endpoints (requires CSM role):**
-- `GET /api/v1/dashboard/csm/clients/` - Get assigned clients only
-
-**Shared Endpoints (Admin or CSM):**
+**Endpoints:**
+- `GET /api/v1/dashboard/clients/` - Get clients (based on permissions)
+- `POST /api/v1/dashboard/assign/` - Assign client to user
+  - Request: `{"client_id": 1, "user_id": 2}`
 - `GET /api/v1/dashboard/client/<id>/` - Get client details
 - `POST /api/v1/dashboard/client/<id>/stage/` - Change client stage
   - Request: `{"new_stage": "contacted", "remarks": "optional"}`
 
 ### Dashboard (Web UI) - Session Auth
 - `/dashboard/login/` - Login page
-- `/dashboard/` - Auto-redirects to Admin or CSM dashboard based on role
-- `/dashboard/admin/` - Admin dashboard (view all clients, assign to CSMs)
-- `/dashboard/csm/` - CSM dashboard (view assigned clients)
+- `/dashboard/` - Unified dashboard (features shown based on permissions)
 - `/dashboard/client/<id>/` - Client detail view with stage management
 
-**Roles & Permissions:**
-- **Admin**: View all clients, assign clients to CSMs, view CSM list
-- **CSM** (Customer Success Manager): View assigned clients only, see AI-extracted context, move clients through stages
+**Permissions (set in Django Admin):**
+- `view_all_clients` - Can view all clients (otherwise only sees assigned clients)
+- `assign_client` - Can assign clients to other users
+- `change_client_stage` - Can change client stages
 
 ## Database Models
 

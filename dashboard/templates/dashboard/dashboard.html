@@ -1,10 +1,10 @@
 {% extends 'dashboard/base.html' %}
 
-{% block title %}Admin Dashboard - Rivo{% endblock %}
+{% block title %}Dashboard - Rivo{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>All Clients</h1>
+    <h1>Clients</h1>
 </div>
 
 <div class="card">
@@ -16,7 +16,10 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Stage</th>
+                {% if perms.can_assign %}
                 <th>Assigned To</th>
+                {% endif %}
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -26,6 +29,7 @@
                 <td>{{ client.email|default:"-" }}</td>
                 <td>{{ client.phone|default:"-" }}</td>
                 <td><span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span></td>
+                {% if perms.can_assign %}
                 <td>
                     {% if client.active_csm %}
                         {{ client.active_csm.get_full_name|default:client.active_csm.email }}
@@ -42,6 +46,10 @@
                             <button type="submit" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Assign</button>
                         </form>
                     {% endif %}
+                </td>
+                {% endif %}
+                <td>
+                    <a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">View</a>
                 </td>
             </tr>
             {% endfor %}

@@ -1,12 +1,20 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from client.models import Client, ClientAssignment, ClientStageHistory
-from account.models import User, Role
-from .permissions import IsAdmin, IsCSM, IsAdminOrCSM
+from account.models import User
+
+
+def get_user_permissions(user):
+    """Get user's dashboard permissions"""
+    return {
+        'can_view_all': user.has_perm('client.view_all_clients') or user.is_superuser,
+        'can_assign': user.has_perm('client.assign_client') or user.is_superuser,
+        'can_change_stage': user.has_perm('client.change_client_stage') or user.is_superuser,
+    }
 
 
 @api_view(['POST'])
@@ -20,22 +28,15 @@ def login_api(request):
     password = request.data.get('password')
     
     if not email or not password:
-        return Response(
-            {'error': 'Email and password required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({'error': 'Email and password required'}, status=status.HTTP_400_BAD_REQUEST)
     
     user = authenticate(request, email=email, password=password)
     
     if user is None:
-        return Response(
-            {'error': 'Invalid credentials'},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
     token, _ = Token.objects.get_or_create(user=user)
-    
-    role_name = user.role.name if user.role else ('admin' if user.is_superuser else None)
+    perms = get_user_permissions(user)
     
     return Response({
         'token': token.key,
@@ -43,23 +44,34 @@ def login_api(request):
             'id': user.id,
             'email': user.email,
             'name': user.get_full_name() or user.email,
-            'role': role_name
-        }
+        },
+        'permissions': perms
     })
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin])
-def admin_clients_api(request):
+@permission_classes([IsAuthenticated])
+def clients_api(request):
     """
-    Admin: Get all clients
+    Get clients based on user permissions
+    - Users with view_all_clients: see all clients
+    - Others: see only assigned clients
     """
-    clients = Client.objects.select_related().prefetch_related(
-        'assignments__assigned_to'
-    ).all()
+    user = request.user
+    perms = get_user_permissions(user)
+    
+    if perms['can_view_all']:
+        clients_qs = Client.objects.all()
+    else:
+        clients_qs = Client.objects.filter(
+            assignments__assigned_to=user,
+            assignments__is_active=True
+        ).distinct()
+    
+    clients_qs = clients_qs.select_related().prefetch_related('assignments__assigned_to')
     
     data = []
-    for client in clients:
+    for client in clients_qs:
         active_assignment = client.assignments.filter(is_active=True).first()
         data.append({
             'id': client.id,
@@ -71,113 +83,76 @@ def admin_clients_api(request):
             'assigned_to': {
                 'id': active_assignment.assigned_to.id,
                 'name': active_assignment.assigned_to.get_full_name() or active_assignment.assigned_to.email,
-                'email': active_assignment.assigned_to.email
             } if active_assignment and active_assignment.assigned_to else None,
+            'context': client.context,
             'created_at': client.created_at.isoformat()
         })
     
-    return Response({'clients': data})
+    users_for_assign = []
+    if perms['can_assign']:
+        users_for_assign = [{
+            'id': u.id,
+            'name': u.get_full_name() or u.email,
+            'email': u.email
+        } for u in User.objects.filter(is_active=True).exclude(id=user.id)]
+    
+    return Response({
+        'clients': data,
+        'permissions': perms,
+        'users_for_assign': users_for_assign,
+        'stage_choices': dict(Client.STAGE_CHOICES)
+    })
 
 
 @api_view(['POST'])
-@permission_classes([IsAdmin])
+@permission_classes([IsAuthenticated])
 def assign_client_api(request):
     """
-    Admin: Assign client to CSM
-    POST: {"client_id": 1, "csm_id": 2}
+    Assign client to user
+    POST: {"client_id": 1, "user_id": 2}
     """
-    client_id = request.data.get('client_id')
-    csm_id = request.data.get('csm_id')
+    user = request.user
+    perms = get_user_permissions(user)
     
-    if not client_id or not csm_id:
-        return Response(
-            {'error': 'client_id and csm_id required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    if not perms['can_assign']:
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    client_id = request.data.get('client_id')
+    user_id = request.data.get('user_id')
+    
+    if not client_id or not user_id:
+        return Response({'error': 'client_id and user_id required'}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         client = Client.objects.get(id=client_id)
     except Client.DoesNotExist:
         return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    csm_role = Role.objects.filter(name__iexact='csm').first()
-    if not csm_role:
-        return Response({'error': 'CSM role not configured'}, status=status.HTTP_400_BAD_REQUEST)
-    
     try:
-        csm = User.objects.get(id=csm_id, role=csm_role, is_active=True)
+        assign_to = User.objects.get(id=user_id, is_active=True)
     except User.DoesNotExist:
-        return Response({'error': 'CSM user not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
     ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
     
     ClientAssignment.objects.create(
         client=client,
-        assigned_to=csm,
-        assigned_by=request.user,
+        assigned_to=assign_to,
+        assigned_by=user,
         is_active=True
     )
     
-    return Response({'message': f'Client assigned to {csm.get_full_name() or csm.email}'})
+    return Response({'message': f'Client assigned to {assign_to.get_full_name() or assign_to.email}'})
 
 
 @api_view(['GET'])
-@permission_classes([IsAdmin])
-def csm_users_api(request):
-    """
-    Admin: Get all CSM users for assignment dropdown
-    """
-    csm_role = Role.objects.filter(name__iexact='csm').first()
-    if not csm_role:
-        return Response({'csm_users': []})
-    
-    csm_users = User.objects.filter(role=csm_role, is_active=True)
-    data = [{
-        'id': u.id,
-        'name': u.get_full_name() or u.email,
-        'email': u.email
-    } for u in csm_users]
-    
-    return Response({'csm_users': data})
-
-
-@api_view(['GET'])
-@permission_classes([IsCSM])
-def csm_clients_api(request):
-    """
-    CSM: Get assigned clients only
-    """
-    clients = Client.objects.filter(
-        assignments__assigned_to=request.user,
-        assignments__is_active=True
-    ).distinct()
-    
-    data = []
-    for client in clients:
-        data.append({
-            'id': client.id,
-            'name': client.name,
-            'email': client.email,
-            'phone': client.phone,
-            'stage': client.current_stage,
-            'stage_display': client.get_current_stage_display(),
-            'context': client.context,
-            'created_at': client.created_at.isoformat()
-        })
-    
-    return Response({'clients': data})
-
-
-@api_view(['GET'])
-@permission_classes([IsAdminOrCSM])
+@permission_classes([IsAuthenticated])
 def client_detail_api(request, client_id):
-    """
-    Get client details (Admin sees all, CSM sees only assigned)
-    """
+    """Get client details"""
     user = request.user
-    is_admin = user.is_superuser or (user.role and user.role.name.lower() == 'admin')
+    perms = get_user_permissions(user)
     
-    if is_admin:
+    if perms['can_view_all']:
         try:
             client = Client.objects.get(id=client_id)
         except Client.DoesNotExist:
@@ -190,7 +165,7 @@ def client_detail_api(request, client_id):
                 assignments__is_active=True
             )
         except Client.DoesNotExist:
-            return Response({'error': 'Client not found or not assigned to you'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
     
     stage_history = [{
         'from_stage': h.from_stage,
@@ -212,21 +187,25 @@ def client_detail_api(request, client_id):
             'created_at': client.created_at.isoformat()
         },
         'stage_history': stage_history,
+        'permissions': perms,
         'stage_choices': dict(Client.STAGE_CHOICES)
     })
 
 
 @api_view(['POST'])
-@permission_classes([IsAdminOrCSM])
+@permission_classes([IsAuthenticated])
 def change_stage_api(request, client_id):
     """
     Change client stage
     POST: {"new_stage": "contacted", "remarks": "optional"}
     """
     user = request.user
-    is_admin = user.is_superuser or (user.role and user.role.name.lower() == 'admin')
+    perms = get_user_permissions(user)
     
-    if is_admin:
+    if not perms['can_change_stage']:
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    if perms['can_view_all']:
         try:
             client = Client.objects.get(id=client_id)
         except Client.DoesNotExist:
@@ -239,7 +218,7 @@ def change_stage_api(request, client_id):
                 assignments__is_active=True
             )
         except Client.DoesNotExist:
-            return Response({'error': 'Client not found or not assigned to you'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
     
     new_stage = request.data.get('new_stage')
     remarks = request.data.get('remarks', '')

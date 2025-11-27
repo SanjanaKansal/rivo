@@ -2,10 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
 from client.models import Client, ClientAssignment, ClientStageHistory
 from account.models import User, Role
-from .forms import LoginForm, ClientAssignmentForm, StageChangeForm
+from .forms import LoginForm, StageChangeForm
 
 
 def login_view(request):
@@ -34,57 +33,47 @@ def logout_view(request):
     return redirect('dashboard:login')
 
 
+def get_user_permissions(user):
+    """Get user's dashboard permissions"""
+    return {
+        'can_view_all': user.has_perm('client.view_all_clients') or user.is_superuser,
+        'can_assign': user.has_perm('client.assign_client') or user.is_superuser,
+        'can_change_stage': user.has_perm('client.change_client_stage') or user.is_superuser,
+    }
+
+
 @login_required
 def home_view(request):
     user = request.user
-    is_admin = user.is_superuser or (user.role and user.role.name.lower() == 'admin')
+    perms = get_user_permissions(user)
     
-    if is_admin:
-        return redirect('dashboard:admin_dashboard')
+    if perms['can_view_all']:
+        clients_qs = Client.objects.all()
     else:
-        return redirect('dashboard:csm_dashboard')
-
-
-@login_required
-def admin_dashboard(request):
-    user = request.user
-    is_admin = user.is_superuser or (user.role and user.role.name.lower() == 'admin')
+        clients_qs = Client.objects.filter(
+            assignments__assigned_to=user,
+            assignments__is_active=True
+        ).distinct()
     
-    if not is_admin:
-        messages.error(request, 'Access denied. Admin only.')
-        return redirect('dashboard:csm_dashboard')
-    
-    clients_qs = Client.objects.select_related().prefetch_related(
-        'assignments__assigned_to'
-    ).all()
+    clients_qs = clients_qs.select_related().prefetch_related('assignments__assigned_to')
     
     clients = []
-    unassigned_clients = []
     for client in clients_qs:
-        active_assignment = client.assignments.filter(is_active=True).select_related('assigned_to').first()
+        active_assignment = client.assignments.filter(is_active=True).first()
         client.active_csm = active_assignment.assigned_to if active_assignment else None
         clients.append(client)
-        if not client.active_csm:
-            unassigned_clients.append(client)
     
-    csm_role = Role.objects.filter(name__iexact='csm').first()
-    if csm_role:
-        csm_users = User.objects.filter(role=csm_role, is_active=True)
-    else:
-        csm_users = User.objects.none()
+    csm_users = []
+    if perms['can_assign']:
+        csm_users = User.objects.filter(is_active=True).exclude(id=user.id)
     
-    if request.method == 'POST':
+    if request.method == 'POST' and perms['can_assign']:
         client_id = request.POST.get('client_id')
         csm_id = request.POST.get('csm_id')
         
         if client_id and csm_id:
             client = get_object_or_404(Client, id=client_id)
-            
-            if csm_role:
-                csm = get_object_or_404(User, id=csm_id, role=csm_role, is_active=True)
-            else:
-                messages.error(request, 'No CSM role configured. Please create a role named "CSM" first.')
-                return redirect('dashboard:admin_dashboard')
+            csm = get_object_or_404(User, id=csm_id, is_active=True)
             
             ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
             
@@ -94,42 +83,24 @@ def admin_dashboard(request):
                 assigned_by=user,
                 is_active=True
             )
-            messages.success(request, f'Client {client.name} assigned to {csm.get_full_name() or csm.email}')
-            return redirect('dashboard:admin_dashboard')
+            messages.success(request, f'Client assigned to {csm.get_full_name() or csm.email}')
+            return redirect('dashboard:home')
     
     context = {
         'clients': clients,
         'csm_users': csm_users,
-        'unassigned_clients': unassigned_clients,
-        'is_admin': True,
+        'perms': perms,
         'stage_choices': Client.STAGE_CHOICES,
     }
-    return render(request, 'dashboard/admin_dashboard.html', context)
-
-
-@login_required
-def csm_dashboard(request):
-    user = request.user
-    
-    assigned_clients = Client.objects.filter(
-        assignments__assigned_to=user,
-        assignments__is_active=True
-    ).select_related().prefetch_related('stage_history').distinct()
-    
-    context = {
-        'clients': assigned_clients,
-        'is_admin': False,
-        'stage_choices': Client.STAGE_CHOICES,
-    }
-    return render(request, 'dashboard/csm_dashboard.html', context)
+    return render(request, 'dashboard/dashboard.html', context)
 
 
 @login_required
 def client_detail(request, client_id):
     user = request.user
-    is_admin = user.is_superuser or (user.role and user.role.name.lower() == 'admin')
+    perms = get_user_permissions(user)
     
-    if is_admin:
+    if perms['can_view_all']:
         client = get_object_or_404(Client, id=client_id)
     else:
         client = get_object_or_404(
@@ -141,7 +112,7 @@ def client_detail(request, client_id):
     
     stage_history = client.stage_history.select_related('changed_by').all()
     
-    if request.method == 'POST':
+    if request.method == 'POST' and perms['can_change_stage']:
         form = StageChangeForm(request.POST)
         if form.is_valid():
             new_stage = form.cleaned_data['new_stage']
@@ -166,7 +137,7 @@ def client_detail(request, client_id):
         'client': client,
         'stage_history': stage_history,
         'form': form,
-        'is_admin': is_admin,
+        'perms': perms,
         'stage_choices': Client.STAGE_CHOICES,
     }
     return render(request, 'dashboard/client_detail.html', context)
