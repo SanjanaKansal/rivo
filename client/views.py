@@ -14,11 +14,22 @@ def get_user_permissions(user):
     }
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def clients_list(request):
     user = request.user
     perms = get_user_permissions(user)
+    
+    if request.method == 'POST':
+        data = request.data
+        client = Client.objects.create(
+            name=data.get('name'),
+            email=data.get('email'),
+            phone=data.get('phone'),
+            session_id=data.get('session_id'),
+            current_stage=data.get('stage', 'lead')
+        )
+        return Response({'id': client.id, 'message': 'Client created'}, status=status.HTTP_201_CREATED)
     
     if perms['can_view_all']:
         clients_qs = Client.objects.all()
@@ -28,7 +39,7 @@ def clients_list(request):
             assignments__is_active=True
         ).distinct()
     
-    clients_qs = clients_qs.select_related().prefetch_related('assignments__assigned_to')
+    clients_qs = clients_qs.prefetch_related('assignments__assigned_to')
     
     data = []
     for client in clients_qs:
@@ -50,11 +61,8 @@ def clients_list(request):
     
     users_for_assign = []
     if perms['can_assign']:
-        users_for_assign = [{
-            'id': u.id,
-            'name': u.get_full_name() or u.email,
-            'email': u.email
-        } for u in User.objects.filter(is_active=True).exclude(id=user.id)]
+        users_for_assign = [{'id': u.id, 'name': u.get_full_name() or u.email} 
+                           for u in User.objects.filter(is_active=True).exclude(id=user.id)]
     
     return Response({
         'clients': data,
@@ -64,44 +72,7 @@ def clients_list(request):
     })
 
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def assign_client(request):
-    user = request.user
-    perms = get_user_permissions(user)
-    
-    if not perms['can_assign']:
-        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-    
-    client_id = request.data.get('client_id')
-    user_id = request.data.get('user_id')
-    
-    if not client_id or not user_id:
-        return Response({'error': 'client_id and user_id required'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    try:
-        client = Client.objects.get(id=client_id)
-    except Client.DoesNotExist:
-        return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
-    
-    try:
-        assign_to = User.objects.get(id=user_id, is_active=True)
-    except User.DoesNotExist:
-        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-    
-    ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
-    
-    ClientAssignment.objects.create(
-        client=client,
-        assigned_to=assign_to,
-        assigned_by=user,
-        is_active=True
-    )
-    
-    return Response({'message': f'Client assigned to {assign_to.get_full_name() or assign_to.email}'})
-
-
-@api_view(['GET'])
+@api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def client_detail(request, client_id):
     user = request.user
@@ -114,13 +85,46 @@ def client_detail(request, client_id):
             return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
     else:
         try:
-            client = Client.objects.get(
-                id=client_id,
-                assignments__assigned_to=user,
-                assignments__is_active=True
-            )
+            client = Client.objects.get(id=client_id, assignments__assigned_to=user, assignments__is_active=True)
         except Client.DoesNotExist:
             return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'DELETE':
+        client.delete()
+        return Response({'message': 'Client deleted'})
+    
+    if request.method == 'PUT':
+        data = request.data
+        
+        if 'name' in data:
+            client.name = data['name']
+        if 'email' in data:
+            client.email = data['email']
+        if 'phone' in data:
+            client.phone = data['phone']
+        
+        if 'stage' in data and perms['can_change_stage']:
+            new_stage = data['stage']
+            if new_stage != client.current_stage:
+                ClientStageHistory.objects.create(
+                    client=client,
+                    from_stage=client.current_stage,
+                    to_stage=new_stage,
+                    changed_by=user,
+                    remarks=data.get('remarks', '')
+                )
+                client.current_stage = new_stage
+        
+        if 'assign_to' in data and perms['can_assign']:
+            try:
+                assign_to = User.objects.get(id=data['assign_to'], is_active=True)
+                ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
+                ClientAssignment.objects.create(client=client, assigned_to=assign_to, assigned_by=user, is_active=True)
+            except User.DoesNotExist:
+                pass
+        
+        client.save()
+        return Response({'message': 'Client updated'})
     
     stage_history = [{
         'from_stage': h.from_stage,
@@ -144,52 +148,4 @@ def client_detail(request, client_id):
         'stage_history': stage_history,
         'permissions': perms,
         'stage_choices': dict(Client.STAGE_CHOICES)
-    })
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def change_stage(request, client_id):
-    user = request.user
-    perms = get_user_permissions(user)
-    
-    if not perms['can_change_stage']:
-        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
-    
-    if perms['can_view_all']:
-        try:
-            client = Client.objects.get(id=client_id)
-        except Client.DoesNotExist:
-            return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
-    else:
-        try:
-            client = Client.objects.get(
-                id=client_id,
-                assignments__assigned_to=user,
-                assignments__is_active=True
-            )
-        except Client.DoesNotExist:
-            return Response({'error': 'Client not found'}, status=status.HTTP_404_NOT_FOUND)
-    
-    new_stage = request.data.get('new_stage')
-    remarks = request.data.get('remarks', '')
-    
-    valid_stages = [s[0] for s in Client.STAGE_CHOICES]
-    if new_stage not in valid_stages:
-        return Response({'error': 'Invalid stage'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    if new_stage != client.current_stage:
-        ClientStageHistory.objects.create(
-            client=client,
-            from_stage=client.current_stage,
-            to_stage=new_stage,
-            changed_by=user,
-            remarks=remarks
-        )
-        client.current_stage = new_stage
-        client.save()
-    
-    return Response({
-        'message': f'Stage updated to {dict(Client.STAGE_CHOICES).get(new_stage)}',
-        'stage': new_stage
     })
