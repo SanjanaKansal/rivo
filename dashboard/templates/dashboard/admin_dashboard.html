@@ -89,13 +89,11 @@
                 <td>{{ client.phone|default:"-" }}</td>
                 <td><span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span></td>
                 <td>
-                    {% with assignment=client.assignments.all|first %}
-                        {% if assignment and assignment.is_active %}
-                            {{ assignment.assigned_to.get_full_name|default:assignment.assigned_to.email }}
-                        {% else %}
-                            <span style="color: #e74c3c;">Unassigned</span>
-                        {% endif %}
-                    {% endwith %}
+                    {% if client.active_csm %}
+                        {{ client.active_csm.get_full_name|default:client.active_csm.email }}
+                    {% else %}
+                        <span style="color: #e74c3c;">Unassigned</span>
+                    {% endif %}
                 </td>
                 <td>
                     <a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">View</a>

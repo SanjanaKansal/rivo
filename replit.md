@@ -8,6 +8,7 @@ Rivo is a Django application with database models for chat conversations, user a
 - **Chat REST API** - Full CRUD endpoints for chatbot conversation history
 - **User/Role Management** - Django Admin interface only (no REST API)
 - **Client/Lead Models** - Database schema only (no REST API or admin interface)
+- **Dashboard** - Role-based web interface for client management
 
 Built with Django 4.2.26 and Django REST Framework.
 
@@ -18,6 +19,7 @@ rivo/
 ├── account/          # User authentication and role management
 ├── chat/             # Chat history API
 ├── client/           # Client/lead management
+├── dashboard/        # Role-based dashboard (Admin/CSM views)
 ├── rivo/             # Django project settings
 ├── manage.py         # Django management script
 └── requirements.txt  # Python dependencies
@@ -48,6 +50,17 @@ rivo/
   - Chat History management
   - Client management (Clients, Context, Stage History, Assignments)
 
+### Dashboard (Web UI)
+- `/dashboard/login/` - Login page
+- `/dashboard/` - Auto-redirects to Admin or CSM dashboard based on role
+- `/dashboard/admin/` - Admin dashboard (view all clients, assign to CSMs)
+- `/dashboard/csm/` - CSM dashboard (view assigned clients)
+- `/dashboard/client/<id>/` - Client detail view with stage management
+
+**Roles:**
+- **Admin**: Can view all clients and assign them to CSM users
+- **CSM** (Customer Success Manager): Can view assigned clients, see AI-extracted context, move clients through stages
+
 ## Database Models
 
 ### Account App
@@ -63,13 +76,17 @@ rivo/
 - **ClientStageHistory**: Track stage transitions
 - **ClientAssignment**: Manage client assignments to customer support users
 
-**AI Context Extraction**: When a client provides name, email, and phone via chat, OpenAI automatically summarizes the conversation and extracts:
-- Intent (client's main goal)
+**AI Context Extraction (Mortgage-focused)**: When a client provides name, email, and phone via chat, OpenAI automatically summarizes the conversation and extracts:
+- Intent (client's mortgage goal - refinance, new mortgage, etc.)
+- Loan Details (loan amount, monthly payment, interest rate, property type/value)
+- Financial Info (income, credit score, debt-to-income, employment)
 - Preferences (mentioned preferences)
 - Key points (important details)
 - Sentiment (positive/neutral/negative)
 - Urgency (low/medium/high)
 - Summary (1-2 sentence overview)
+
+**Client Stages**: lead, contacted, qualified, docs_pending, docs_received, application_started, application_submitted, application_in_process, application_approved, disbursed, active, lost, closed, rejected
 
 ## Development Setup
 
@@ -122,11 +139,20 @@ The project is configured for deployment using:
 
 ## Recent Changes
 
+- November 27, 2025: Added role-based dashboard
+  - Created dashboard app with login/logout views
+  - Admin dashboard: view all clients, assign to CSMs
+  - CSM dashboard: view assigned clients with readable context
+  - Client detail view with stage change feature
+  - Clean, modern responsive styling
+  - Session-based authentication
+
 - November 27, 2025: Added AI context extraction for clients
   - Added `context` JSONField to Client model
-  - Created OpenAI service for chat history summarization
+  - Created OpenAI service for chat history summarization (mortgage-focused)
   - Integrated Replit AI Integrations for OpenAI access
-  - Auto-extracts intent, preferences, sentiment from chat when client info is complete
+  - Auto-extracts loan details, financial info, intent, sentiment from chat
+  - Added field validations (name, email, phone)
 
 - November 26, 2025: Connected to Supabase PostgreSQL
   - Configured DATABASE_URL with Supabase connection pooler

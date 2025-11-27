@@ -54,16 +54,24 @@ def admin_dashboard(request):
         messages.error(request, 'Access denied. Admin only.')
         return redirect('dashboard:csm_dashboard')
     
-    clients = Client.objects.select_related().prefetch_related(
+    clients_qs = Client.objects.select_related().prefetch_related(
         'assignments__assigned_to'
     ).all()
     
-    csm_role = Role.objects.filter(name__iexact='csm').first()
-    csm_users = User.objects.filter(role=csm_role, is_active=True) if csm_role else User.objects.filter(is_active=True)
+    clients = []
+    unassigned_clients = []
+    for client in clients_qs:
+        active_assignment = client.assignments.filter(is_active=True).select_related('assigned_to').first()
+        client.active_csm = active_assignment.assigned_to if active_assignment else None
+        clients.append(client)
+        if not client.active_csm:
+            unassigned_clients.append(client)
     
-    unassigned_clients = clients.filter(
-        Q(assignments__isnull=True) | Q(assignments__is_active=False)
-    ).distinct()
+    csm_role = Role.objects.filter(name__iexact='csm').first()
+    if csm_role:
+        csm_users = User.objects.filter(role=csm_role, is_active=True)
+    else:
+        csm_users = User.objects.none()
     
     if request.method == 'POST':
         client_id = request.POST.get('client_id')
@@ -71,7 +79,12 @@ def admin_dashboard(request):
         
         if client_id and csm_id:
             client = get_object_or_404(Client, id=client_id)
-            csm = get_object_or_404(User, id=csm_id)
+            
+            if csm_role:
+                csm = get_object_or_404(User, id=csm_id, role=csm_role, is_active=True)
+            else:
+                messages.error(request, 'No CSM role configured. Please create a role named "CSM" first.')
+                return redirect('dashboard:admin_dashboard')
             
             ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
             
