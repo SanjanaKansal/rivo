@@ -40,9 +40,5 @@ class User(AbstractUser, BaseModel):
         return super().has_perm(perm, obj)
 
     @property
-    def can_view_client(self):
-        return self.has_perm('client.view_client')
-
-    @property
     def can_change_client(self):
         return self.has_perm('client.change_client')

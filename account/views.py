@@ -19,7 +19,7 @@ def login(request):
     if not user:
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    token, _ = Token.objects.get_or_create(user=user)
+    token, _ = Token.objects.get_or_create(user=user)  # type: ignore
     return Response({
         'token': token.key,
         'user': {'id': user.id, 'email': user.email, 'name': user.get_full_name() or user.email}

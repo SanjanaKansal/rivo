@@ -30,13 +30,11 @@ def logout_view(request):
 @login_required
 def home_view(request):
     user = request.user
-    
-    qs = Client.objects.all().prefetch_related('assignments__assigned_to')
-    
     clients = []
-    for c in qs:
+    
+    for c in Client.objects.all().prefetch_related('assignments__assigned_to'):
         a = c.assignments.filter(is_active=True).first()
-        c.active_csm = a.assigned_to if a else None
+        c.active_csm = a.assigned_to if a else None  # type: ignore
         clients.append(c)
     
     csm_users = User.objects.filter(is_active=True).exclude(id=user.id) if user.can_change_client else []
@@ -76,6 +74,6 @@ def client_detail(request, client_id):
         form = StageChangeForm(initial={'new_stage': client.current_stage})
     
     return render(request, 'dashboard/client_detail.html', {
-        'client': client, 'stage_history': client.stage_history.select_related('changed_by'), 'form': form,
-        'perms': {'can_change_client': user.can_change_client}
+        'client': client, 'stage_history': client.stage_history.all(),
+        'perms': {'can_change_client': user.can_change_client}, 'form': form
     })

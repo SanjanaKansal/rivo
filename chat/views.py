@@ -19,40 +19,37 @@ class ChatViewSet(viewsets.ViewSet):
         sender_type = serializer.validated_data['sender_type']
         data_type = serializer.validated_data.get('data_type', 'message')
 
-        client = self._get_client_for_session(session_id)
+        client = self._get_client(session_id)
 
         if data_type in ['name', 'email', 'phone']:
             if not client:
                 client = Client.objects.create()
                 ChatHistory.objects.filter(session_id=session_id, client__isnull=True).update(client=client)
 
-            self._update_client_info(client, data_type, message)
+            self._update_client(client, data_type, message)
 
             if client.is_complete:
                 messages = ChatHistory.objects.filter(session_id=session_id, data_type='message').values('sender_type', 'message')
-                context = summarize_chat_history(list(messages))
-                client.initialize(context=context)
+                client.initialize(context=summarize_chat_history(list(messages)))
 
-        chat_message = ChatHistory.objects.create(
+        chat = ChatHistory.objects.create(
             session_id=session_id, client=client, message=message, sender_type=sender_type, data_type=data_type
         )
-
-        return Response(ChatHistorySerializer(chat_message).data, status=status.HTTP_201_CREATED)
+        return Response(ChatHistorySerializer(chat).data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['get'])
     def history(self, request):
         session_id = request.query_params.get('session_id')
         if not session_id:
             return Response({'error': 'session_id required'}, status=status.HTTP_400_BAD_REQUEST)
-
         messages = ChatHistory.objects.filter(session_id=session_id)
         return Response({'session_id': session_id, 'messages': ChatHistorySerializer(messages, many=True).data})
 
-    def _get_client_for_session(self, session_id):
+    def _get_client(self, session_id):
         chat = ChatHistory.objects.filter(session_id=session_id, client__isnull=False).first()
         return chat.client if chat else None
 
-    def _update_client_info(self, client, data_type, message):
+    def _update_client(self, client, data_type, message):
         if data_type == 'name':
             client.name = message.strip().title()
         elif data_type == 'email':

@@ -13,14 +13,12 @@ def clients(request):
         data = request.data
         client = Client.objects.create(
             name=data.get('name'), email=data.get('email'), phone=data.get('phone'),
-            session_id=data.get('session_id'), current_stage=data.get('stage', 'lead')
+            current_stage=data.get('stage', 'lead')
         )
         return Response({'id': client.id}, status=status.HTTP_201_CREATED)
     
-    qs = Client.objects.all().prefetch_related('assignments__assigned_to')
-    
     data = []
-    for c in qs:
+    for c in Client.objects.all().prefetch_related('assignments__assigned_to'):
         a = c.assignments.filter(is_active=True).first()
         data.append({
             'id': c.id, 'name': c.name, 'email': c.email, 'phone': c.phone,
@@ -34,8 +32,6 @@ def clients(request):
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def client_detail(request, pk):
-    user = request.user
-    
     try:
         client = Client.objects.get(pk=pk)
     except Client.DoesNotExist:
@@ -53,12 +49,12 @@ def client_detail(request, pk):
         client.save()
         
         if 'stage' in data:
-            client.set_stage(data['stage'], changed_by=user)
+            client.set_stage(data['stage'], changed_by=request.user)
         
         if 'assign_to' in data:
             try:
                 assign_to = User.objects.get(pk=data['assign_to'], is_active=True)
-                client.assign(assigned_to=assign_to, assigned_by=user)
+                client.assign(assigned_to=assign_to, assigned_by=request.user)
             except User.DoesNotExist:
                 pass
         
