@@ -27,6 +27,11 @@ class Client(BaseModel):
     name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(db_index=True, blank=True)
     phone = models.CharField(max_length=20, db_index=True, blank=True)
+    context = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="AI-summarized context from chat history (intent, preferences, etc.)"
+    )
     current_stage = models.CharField(
         max_length=50,
         choices=STAGE_CHOICES,

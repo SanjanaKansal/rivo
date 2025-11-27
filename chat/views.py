@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from client.models import ClientStageHistory, ClientAssignment
+from client.services import summarize_chat_history
 from .models import ChatHistory, Client
 from .serializers import ChatHistorySerializer, SendMessageSerializer
 import re
@@ -59,7 +60,7 @@ class ChatViewSet(viewsets.ViewSet):
             self._update_client_info(client, data_type, message)
 
             if client.is_complete:
-                self._initialize_client_workflow(client)
+                self._initialize_client_workflow(client, session_id)
 
         # Create the chat message
         chat_message = ChatHistory.objects.create(
@@ -120,9 +121,10 @@ class ChatViewSet(viewsets.ViewSet):
             client.phone = phone_clean
         client.save()
 
-    def _initialize_client_workflow(self, client):
+    def _initialize_client_workflow(self, client, session_id):
         """
         Initialize client workflow when info is complete:
+        - Summarize chat history with AI and store as context
         - Create ClientStageHistory entry
         - Create ClientAssignment entry
         Only runs once to avoid duplicates
@@ -130,15 +132,22 @@ class ChatViewSet(viewsets.ViewSet):
         if ClientStageHistory.objects.filter(client=client).exists():
             return
 
+        messages = ChatHistory.objects.filter(
+            session_id=session_id
+        ).values('sender_type', 'message', 'data_type')
+        
+        context = summarize_chat_history(list(messages))
+        client.context = context
+        client.save()
+
         ClientStageHistory.objects.create(
             client=client,
             from_stage='',
             to_stage='lead',
-            changed_by=None,  # System-generated, no user
+            changed_by=None,
             remarks='Client information collected via chat. Ready for assignment.'
         )
 
-        # Create assignment (unassigned initially)
         ClientAssignment.objects.create(
             client=client,
             assigned_to=None,

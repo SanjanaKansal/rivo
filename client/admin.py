@@ -7,7 +7,7 @@ class ClientAdmin(admin.ModelAdmin):
     list_display = ['name', 'email', 'phone', 'current_stage', 'created_at']
     list_filter = ['current_stage', 'created_at']
     search_fields = ['name', 'email', 'phone']
-    readonly_fields = ['created_at', 'updated_at']
+    readonly_fields = ['context', 'created_at', 'updated_at']
 
 
 @admin.register(ClientStageHistory)
