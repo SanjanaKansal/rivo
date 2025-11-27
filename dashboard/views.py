@@ -96,6 +96,38 @@ def home_view(request):
 
 
 @login_required
+def assign_client(request):
+    if request.method != 'POST':
+        return redirect('dashboard:home')
+    
+    user = request.user
+    perms = get_user_permissions(user)
+    
+    if not perms['can_assign']:
+        messages.error(request, 'Permission denied')
+        return redirect('dashboard:home')
+    
+    client_id = request.POST.get('client_id')
+    user_id = request.POST.get('user_id')
+    
+    if client_id and user_id:
+        client = get_object_or_404(Client, id=client_id)
+        csm = get_object_or_404(User, id=user_id, is_active=True)
+        
+        ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
+        
+        ClientAssignment.objects.create(
+            client=client,
+            assigned_to=csm,
+            assigned_by=user,
+            is_active=True
+        )
+        messages.success(request, f'Client assigned to {csm.get_full_name() or csm.email}')
+    
+    return redirect('dashboard:home')
+
+
+@login_required
 def client_detail(request, client_id):
     user = request.user
     perms = get_user_permissions(user)
