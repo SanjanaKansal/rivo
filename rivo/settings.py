@@ -79,6 +79,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.replit.app',
     'http://*.kirk.replit.dev',
     'https://*.kirk.replit.dev',
+    'https://rivo-hub.replit.app',
 ]
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
