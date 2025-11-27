@@ -70,22 +70,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://*.replit.dev',
-    'https://*.replit.dev',
-    'http://*.repl.co',
-    'https://*.repl.co',
-    'http://*.replit.app',
-    'https://*.replit.app',
-    'http://*.kirk.replit.dev',
-    'https://*.kirk.replit.dev',
-    'https://rivo-hub.replit.app',
-]
-CSRF_COOKIE_SECURE = False
-CSRF_COOKIE_HTTPONLY = False
-SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_TRUSTED_ORIGINS = ['https://*.replit.app', 'https://*.replit.dev']
+if os.environ.get('REPLIT_DEV_DOMAIN'):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['REPLIT_DEV_DOMAIN']}")
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 ROOT_URLCONF = 'rivo.urls'
