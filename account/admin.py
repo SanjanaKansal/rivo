@@ -1,5 +1,3 @@
-# admin.py
-
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User, Role
@@ -7,10 +5,9 @@ from .models import User, Role
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ['name', 'description', 'created_at']
-    search_fields = ['name', 'description']
+    list_display = ['name', 'created_at']
+    search_fields = ['name']
     filter_horizontal = ['permissions']
-    readonly_fields = ['created_at', 'updated_at']
 
 
 @admin.register(User)
@@ -19,4 +16,14 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ['is_active', 'is_staff', 'role']
     search_fields = ['email', 'first_name', 'last_name']
     ordering = ['-created_at']
-    readonly_fields = ['last_login', 'created_at', 'updated_at']
+    
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Personal', {'fields': ('first_name', 'last_name', 'phone')}),
+        ('Role', {'fields': ('role',)}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
+    )
+    
+    add_fieldsets = (
+        (None, {'fields': ('email', 'username', 'password1', 'password2', 'role')}),
+    )
