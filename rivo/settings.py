@@ -74,8 +74,17 @@ CSRF_TRUSTED_ORIGINS = [
     'http://*.replit.dev',
     'https://*.replit.dev',
     'http://*.repl.co',
-    'https://*.repl.co'
+    'https://*.repl.co',
+    'http://*.replit.app',
+    'https://*.replit.app',
+    'http://*.kirk.replit.dev',
+    'https://*.kirk.replit.dev',
 ]
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
+SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 ROOT_URLCONF = 'rivo.urls'
