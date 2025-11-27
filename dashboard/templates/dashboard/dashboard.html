@@ -35,20 +35,16 @@
                 <td><span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span></td>
                 {% if perms.can_assign %}
                 <td>
-                    {% if client.active_csm %}
-                        {{ client.active_csm.get_full_name|default:client.active_csm.email }}
-                    {% else %}
-                        <form method="post" action="{% url 'dashboard:assign_client' %}" style="display: flex; gap: 0.25rem;">
-                            {% csrf_token %}
-                            <input type="hidden" name="client_id" value="{{ client.id }}">
-                            <select name="user_id" class="form-select" style="width: auto; min-width: 100px;">
-                                {% for user in csm_users %}
-                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-primary">Assign</button>
-                        </form>
-                    {% endif %}
+                    <form method="post" action="{% url 'dashboard:assign_client' %}" style="display: flex; gap: 0.25rem; align-items: center;">
+                        {% csrf_token %}
+                        <input type="hidden" name="client_id" value="{{ client.id }}">
+                        <select name="user_id" class="form-select" style="width: auto; min-width: 100px;">
+                            {% for user in csm_users %}
+                            <option value="{{ user.id }}" {% if client.active_csm and client.active_csm.id == user.id %}selected{% endif %}>{{ user.get_full_name|default:user.email }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary">{% if client.active_csm %}Reassign{% else %}Assign{% endif %}</button>
+                    </form>
                 </td>
                 {% endif %}
                 <td><a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary">View</a></td>
