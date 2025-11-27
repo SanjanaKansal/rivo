@@ -47,11 +47,6 @@ class Client(BaseModel):
             models.Index(fields=['email', 'phone']),
             models.Index(fields=['current_stage', '-created_at']),
         ]
-        permissions = [
-            ("view_all_clients", "Can view all clients"),
-            ("assign_client", "Can assign clients to users"),
-            ("change_client_stage", "Can change client stage"),
-        ]
 
     def __str__(self):
         return f"{self.name} - {self.current_stage}"

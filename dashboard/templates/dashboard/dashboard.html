@@ -22,7 +22,7 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Stage</th>
-                {% if perms.can_assign %}<th>Assigned</th>{% endif %}
+                {% if perms.can_change_client %}<th>Assigned</th>{% endif %}
                 <th></th>
             </tr>
         </thead>
@@ -33,7 +33,7 @@
                 <td>{{ client.email|default:"-" }}</td>
                 <td>{{ client.phone|default:"-" }}</td>
                 <td><span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span></td>
-                {% if perms.can_assign %}
+                {% if perms.can_change_client %}
                 <td>
                     <form method="post" action="{% url 'dashboard:assign_client' %}" style="display: flex; gap: 0.25rem; align-items: center;">
                         {% csrf_token %}

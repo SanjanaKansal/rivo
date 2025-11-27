@@ -37,7 +37,7 @@
             <h1>{{ client.name|default:"Unnamed" }}</h1>
             <span>{{ client.email|default:"-" }} | {{ client.phone|default:"-" }}</span>
         </div>
-        {% if perms.can_change_stage %}
+        {% if perms.can_change_client %}
         <form method="post" class="stage-form">{% csrf_token %}{{ form.new_stage }}<button type="submit" class="btn btn-success">Save</button></form>
         {% else %}
         <span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span>

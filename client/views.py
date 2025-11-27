@@ -19,8 +19,7 @@ def clients(request):
         )
         return Response({'id': client.id}, status=status.HTTP_201_CREATED)
     
-    qs = Client.objects.all() if user.can_view_all else Client.objects.filter(assignments__assigned_to=user, assignments__is_active=True).distinct()
-    qs = qs.prefetch_related('assignments__assigned_to')
+    qs = Client.objects.all().prefetch_related('assignments__assigned_to')
     
     data = []
     for c in qs:
@@ -40,7 +39,7 @@ def client_detail(request, pk):
     user = request.user
     
     try:
-        client = Client.objects.get(pk=pk) if user.can_view_all else Client.objects.get(pk=pk, assignments__assigned_to=user, assignments__is_active=True)
+        client = Client.objects.get(pk=pk)
     except Client.DoesNotExist:
         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
     

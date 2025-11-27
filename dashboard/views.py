@@ -31,8 +31,7 @@ def logout_view(request):
 def home_view(request):
     user = request.user
     
-    qs = Client.objects.all() if user.can_view_all else Client.objects.filter(assignments__assigned_to=user, assignments__is_active=True).distinct()
-    qs = qs.prefetch_related('assignments__assigned_to')
+    qs = Client.objects.all().prefetch_related('assignments__assigned_to')
     
     clients = []
     for c in qs:
@@ -40,18 +39,18 @@ def home_view(request):
         c.active_csm = a.assigned_to if a else None
         clients.append(c)
     
-    csm_users = User.objects.filter(is_active=True).exclude(id=user.id) if user.can_assign else []
+    csm_users = User.objects.filter(is_active=True).exclude(id=user.id) if user.can_change_client else []
     
     return render(request, 'dashboard/dashboard.html', {
         'clients': clients, 'csm_users': csm_users, 
-        'perms': {'can_assign': user.can_assign, 'can_change_stage': user.can_change_stage},
+        'perms': {'can_change_client': user.can_change_client},
         'stage_choices': Client.STAGE_CHOICES
     })
 
 
 @login_required
 def assign_client(request):
-    if request.method != 'POST' or not request.user.can_assign:
+    if request.method != 'POST' or not request.user.can_change_client:
         return redirect('dashboard:home')
     
     client_id, user_id = request.POST.get('client_id'), request.POST.get('user_id')
@@ -67,10 +66,9 @@ def assign_client(request):
 @login_required
 def client_detail(request, client_id):
     user = request.user
+    client = get_object_or_404(Client, id=client_id)
     
-    client = get_object_or_404(Client, id=client_id) if user.can_view_all else get_object_or_404(Client, id=client_id, assignments__assigned_to=user, assignments__is_active=True)
-    
-    if request.method == 'POST':
+    if request.method == 'POST' and user.can_change_client:
         form = StageChangeForm(request.POST)
         if form.is_valid():
             client.set_stage(form.cleaned_data['new_stage'], changed_by=user)
@@ -80,5 +78,5 @@ def client_detail(request, client_id):
     
     return render(request, 'dashboard/client_detail.html', {
         'client': client, 'stage_history': client.stage_history.select_related('changed_by'), 'form': form,
-        'perms': {'can_change_stage': user.can_change_stage}
+        'perms': {'can_change_client': user.can_change_client}
     })
