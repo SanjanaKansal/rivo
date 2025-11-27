@@ -1,0 +1,75 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Dashboard - Rivo{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
+        <input type="text" id="searchFilter" class="form-input" placeholder="Search..." style="max-width: 180px;" onkeyup="filterClients()">
+        <select id="stageFilter" class="form-select" style="max-width: 140px;" onchange="filterClients()">
+            <option value="">All Stages</option>
+            {% for stage_key, stage_name in stage_choices %}
+            <option value="{{ stage_key }}">{{ stage_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    {% if clients %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Stage</th>
+                {% if perms.can_assign %}<th>Assigned</th>{% endif %}
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in clients %}
+            <tr data-stage="{{ client.current_stage }}">
+                <td><strong>{{ client.name|default:"-" }}</strong></td>
+                <td>{{ client.email|default:"-" }}</td>
+                <td>{{ client.phone|default:"-" }}</td>
+                <td><span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span></td>
+                {% if perms.can_assign %}
+                <td>
+                    <form method="post" action="{% url 'dashboard:assign_client' %}" style="display: flex; gap: 0.25rem; align-items: center;">
+                        {% csrf_token %}
+                        <input type="hidden" name="client_id" value="{{ client.id }}">
+                        <select name="user_id" class="form-select" style="width: auto; min-width: 100px;">
+                            {% for user in csm_users %}
+                            <option value="{{ user.id }}" {% if client.active_csm and client.active_csm.id == user.id %}selected{% endif %}>{{ user.get_full_name|default:user.email }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary">{% if client.active_csm %}Reassign{% else %}Assign{% endif %}</button>
+                    </form>
+                </td>
+                {% endif %}
+                <td><a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #7f8c8d; text-align: center; padding: 1rem;">No clients found.</p>
+    {% endif %}
+</div>
+
+<script>
+function filterClients() {
+    const search = document.getElementById('searchFilter').value.toLowerCase();
+    const stage = document.getElementById('stageFilter').value;
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const rowStage = row.dataset.stage;
+        const matchesStage = !stage || rowStage === stage;
+        const matchesSearch = text.includes(search);
+        row.style.display = (matchesSearch && matchesStage) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

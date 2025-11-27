@@ -8,6 +8,7 @@ Rivo is a Django application with database models for chat conversations, user a
 - **Chat REST API** - Full CRUD endpoints for chatbot conversation history
 - **User/Role Management** - Django Admin interface only (no REST API)
 - **Client/Lead Models** - Database schema only (no REST API or admin interface)
+- **Dashboard** - Role-based web interface for client management
 
 Built with Django 4.2.26 and Django REST Framework.
 
@@ -18,6 +19,7 @@ rivo/
 ├── account/          # User authentication and role management
 ├── chat/             # Chat history API
 ├── client/           # Client/lead management
+├── dashboard/        # Role-based dashboard (Admin/CSM views)
 ├── rivo/             # Django project settings
 ├── manage.py         # Django management script
 └── requirements.txt  # Python dependencies
@@ -48,6 +50,32 @@ rivo/
   - Chat History management
   - Client management (Clients, Context, Stage History, Assignments)
 
+### Dashboard API (Token Auth)
+All endpoints require `Authorization: Token <token>` header (except login).
+
+**Authentication:**
+- `POST /api/v1/dashboard/login/` - Get auth token
+  - Request: `{"email": "...", "password": "..."}`
+  - Response: `{"token": "...", "user": {...}, "permissions": {...}}`
+
+**Endpoints:**
+- `GET /api/v1/dashboard/clients/` - Get clients (based on permissions)
+- `POST /api/v1/dashboard/assign/` - Assign client to user
+  - Request: `{"client_id": 1, "user_id": 2}`
+- `GET /api/v1/dashboard/client/<id>/` - Get client details
+- `POST /api/v1/dashboard/client/<id>/stage/` - Change client stage
+  - Request: `{"new_stage": "contacted", "remarks": "optional"}`
+
+### Dashboard (Web UI) - Session Auth
+- `/dashboard/login/` - Login page
+- `/dashboard/` - Unified dashboard (features shown based on permissions)
+- `/dashboard/client/<id>/` - Client detail view with stage management
+
+**Permissions (set in Django Admin):**
+- `view_all_clients` - Can view all clients (otherwise only sees assigned clients)
+- `assign_client` - Can assign clients to other users
+- `change_client_stage` - Can change client stages
+
 ## Database Models
 
 ### Account App
@@ -63,13 +91,17 @@ rivo/
 - **ClientStageHistory**: Track stage transitions
 - **ClientAssignment**: Manage client assignments to customer support users
 
-**AI Context Extraction**: When a client provides name, email, and phone via chat, OpenAI automatically summarizes the conversation and extracts:
-- Intent (client's main goal)
+**AI Context Extraction (Mortgage-focused)**: When a client provides name, email, and phone via chat, OpenAI automatically summarizes the conversation and extracts:
+- Intent (client's mortgage goal - refinance, new mortgage, etc.)
+- Loan Details (loan amount, monthly payment, interest rate, property type/value)
+- Financial Info (income, credit score, debt-to-income, employment)
 - Preferences (mentioned preferences)
 - Key points (important details)
 - Sentiment (positive/neutral/negative)
 - Urgency (low/medium/high)
 - Summary (1-2 sentence overview)
+
+**Client Stages**: lead, contacted, qualified, docs_pending, docs_received, application_started, application_submitted, application_in_process, application_approved, disbursed, active, lost, closed, rejected
 
 ## Development Setup
 
@@ -122,11 +154,20 @@ The project is configured for deployment using:
 
 ## Recent Changes
 
+- November 27, 2025: Added role-based dashboard
+  - Created dashboard app with login/logout views
+  - Admin dashboard: view all clients, assign to CSMs
+  - CSM dashboard: view assigned clients with readable context
+  - Client detail view with stage change feature
+  - Clean, modern responsive styling
+  - Session-based authentication
+
 - November 27, 2025: Added AI context extraction for clients
   - Added `context` JSONField to Client model
-  - Created OpenAI service for chat history summarization
+  - Created OpenAI service for chat history summarization (mortgage-focused)
   - Integrated Replit AI Integrations for OpenAI access
-  - Auto-extracts intent, preferences, sentiment from chat when client info is complete
+  - Auto-extracts loan details, financial info, intent, sentiment from chat
+  - Added field validations (name, email, phone)
 
 - November 26, 2025: Connected to Supabase PostgreSQL
   - Configured DATABASE_URL with Supabase connection pooler
