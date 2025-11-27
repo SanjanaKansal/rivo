@@ -3,14 +3,10 @@
 {% block title %}Dashboard - Rivo{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>Clients</h1>
-</div>
-
 <div class="card">
-    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <input type="text" id="searchFilter" class="form-input" placeholder="Search..." style="max-width: 200px;" onkeyup="filterClients()">
-        <select id="stageFilter" class="form-select" style="max-width: 150px;" onchange="filterClients()">
+    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem;">
+        <input type="text" id="searchFilter" class="form-input" placeholder="Search..." style="max-width: 180px;" onkeyup="filterClients()">
+        <select id="stageFilter" class="form-select" style="max-width: 140px;" onchange="filterClients()">
             <option value="">All Stages</option>
             {% for stage_key, stage_name in stage_choices %}
             <option value="{{ stage_key }}">{{ stage_name }}</option>
@@ -26,10 +22,8 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Stage</th>
-                {% if perms.can_assign %}
-                <th>Assigned To</th>
-                {% endif %}
-                <th>Actions</th>
+                {% if perms.can_assign %}<th>Assigned</th>{% endif %}
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -44,29 +38,26 @@
                     {% if client.active_csm %}
                         {{ client.active_csm.get_full_name|default:client.active_csm.email }}
                     {% else %}
-                        <form method="post" style="display: inline;">
+                        <form method="post" action="{% url 'dashboard:assign_client' %}" style="display: flex; gap: 0.25rem;">
                             {% csrf_token %}
                             <input type="hidden" name="client_id" value="{{ client.id }}">
-                            <select name="csm_id" class="form-select" style="width: auto; display: inline-block; padding: 0.3rem;" required>
-                                <option value="">Assign to...</option>
-                                {% for csm in csm_users %}
-                                <option value="{{ csm.id }}">{{ csm.get_full_name|default:csm.email }}</option>
+                            <select name="user_id" class="form-select" style="width: auto; min-width: 100px;">
+                                {% for user in csm_users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.email }}</option>
                                 {% endfor %}
                             </select>
-                            <button type="submit" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Assign</button>
+                            <button type="submit" class="btn btn-primary">Assign</button>
                         </form>
                     {% endif %}
                 </td>
                 {% endif %}
-                <td>
-                    <a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">View</a>
-                </td>
+                <td><a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary">View</a></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p style="color: #7f8c8d; text-align: center; padding: 2rem;">No clients found.</p>
+    <p style="color: #7f8c8d; text-align: center; padding: 1rem;">No clients found.</p>
     {% endif %}
 </div>
 

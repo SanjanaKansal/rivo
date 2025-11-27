@@ -4,61 +4,25 @@
 
 {% block content %}
 <style>
-    .back-link { color: #3498db; text-decoration: none; font-size: 0.8rem; }
-    .back-link:hover { text-decoration: underline; }
+    .back-link { color: #3498db; text-decoration: none; font-size: 0.75rem; }
+    .client-header { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+    .client-info h1 { font-size: 1rem; margin: 0; color: #2c3e50; }
+    .client-info span { color: #7f8c8d; font-size: 0.75rem; }
+    .stage-form { display: flex; gap: 0.3rem; }
     
-    .client-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }
+    .summary-box { background: #f0f7ff; border-left: 3px solid #3498db; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; font-size: 0.85rem; }
     
-    .client-info h1 { font-size: 1.1rem; margin: 0; color: #2c3e50; }
-    .client-info p { color: #7f8c8d; margin: 0; font-size: 0.8rem; }
+    .context-row { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.8rem; }
+    .context-item { display: flex; gap: 0.3rem; }
+    .context-label { color: #7f8c8d; }
+    .context-value { color: #2c3e50; font-weight: 500; }
     
-    .stage-form { display: flex; align-items: center; gap: 0.4rem; }
+    .context-section { margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #eee; }
     
-    .summary-text { font-size: 0.9rem; margin-bottom: 0.75rem; color: #34495e; }
+    .tag { background: #e8f4fd; color: #2980b9; padding: 0.1rem 0.4rem; border-radius: 8px; font-size: 0.7rem; margin-right: 0.25rem; }
     
-    .context-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 0.5rem;
-    }
-    
-    .context-box {
-        background: #f8f9fa;
-        border-radius: 4px;
-        padding: 0.5rem 0.75rem;
-        font-size: 0.8rem;
-    }
-    
-    .context-box h4 {
-        color: #2c3e50;
-        margin: 0 0 0.4rem 0;
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid #e0e0e0;
-        padding-bottom: 0.3rem;
-    }
-    
-    .info-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.2rem 0;
-    }
-    .info-label { color: #7f8c8d; font-size: 0.75rem; }
-    .info-value { color: #2c3e50; font-size: 0.8rem; }
-    
-    .tags { margin-top: 0.5rem; }
-    .tag { background: #e8f4fd; color: #2980b9; padding: 0.1rem 0.4rem; border-radius: 8px; font-size: 0.7rem; margin-right: 0.3rem; }
-    
-    .history-list { font-size: 0.8rem; }
-    .history-item { padding: 0.4rem 0.5rem; border-left: 2px solid #3498db; margin-bottom: 0.4rem; background: #f8f9fa; }
-    .history-time { color: #7f8c8d; font-size: 0.7rem; }
+    .history-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.75rem; }
+    .history-item:last-child { border: none; }
     
     .sentiment-positive { color: #27ae60; }
     .sentiment-neutral { color: #f39c12; }
@@ -71,14 +35,10 @@
     <div class="client-header">
         <div class="client-info">
             <h1>{{ client.name|default:"Unnamed" }}</h1>
-            <p>{{ client.email|default:"-" }} | {{ client.phone|default:"-" }} | {{ client.created_at|date:"M d, Y" }}</p>
+            <span>{{ client.email|default:"-" }} | {{ client.phone|default:"-" }}</span>
         </div>
         {% if perms.can_change_stage %}
-        <form method="post" class="stage-form">
-            {% csrf_token %}
-            {{ form.new_stage }}
-            <button type="submit" class="btn btn-success">Update</button>
-        </form>
+        <form method="post" class="stage-form">{% csrf_token %}{{ form.new_stage }}<button type="submit" class="btn btn-success">Save</button></form>
         {% else %}
         <span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span>
         {% endif %}
@@ -87,60 +47,53 @@
 
 {% if client.context %}
 <div class="card">
-    <div class="card-header"><h2>AI Summary</h2></div>
-    {% if client.context.summary %}<p class="summary-text">{{ client.context.summary }}</p>{% endif %}
+    {% if client.context.summary %}
+    <div class="summary-box">{{ client.context.summary }}</div>
+    {% endif %}
     
-    <div class="context-grid">
-        <div class="context-box">
-            <h4>Overview</h4>
-            <div class="info-row"><span class="info-label">Intent</span><span class="info-value">{{ client.context.intent|default:"-" }}</span></div>
-            <div class="info-row"><span class="info-label">Sentiment</span><span class="info-value sentiment-{{ client.context.sentiment|default:'neutral' }}">{{ client.context.sentiment|default:"-"|capfirst }}</span></div>
-            <div class="info-row"><span class="info-label">Urgency</span><span class="info-value">{{ client.context.urgency|default:"-"|capfirst }}</span></div>
-        </div>
-        
-        {% if client.context.loan_details %}
-        <div class="context-box">
-            <h4>Loan</h4>
-            {% with loan=client.context.loan_details %}
-            <div class="info-row"><span class="info-label">Type</span><span class="info-value">{{ loan.loan_type|default:"-" }}</span></div>
-            <div class="info-row"><span class="info-label">Amount</span><span class="info-value">{{ loan.current_loan_amount|default:"-" }}</span></div>
-            <div class="info-row"><span class="info-label">Rate</span><span class="info-value">{{ loan.interest_rate|default:"-" }}</span></div>
-            {% endwith %}
-        </div>
-        {% endif %}
-        
-        {% if client.context.financial_info %}
-        <div class="context-box">
-            <h4>Financial</h4>
-            {% with fin=client.context.financial_info %}
-            <div class="info-row"><span class="info-label">Income</span><span class="info-value">{{ fin.income|default:"-" }}</span></div>
-            <div class="info-row"><span class="info-label">Credit</span><span class="info-value">{{ fin.credit_score|default:"-" }}</span></div>
-            <div class="info-row"><span class="info-label">DTI</span><span class="info-value">{{ fin.debt_to_income|default:"-" }}</span></div>
-            {% endwith %}
-        </div>
-        {% endif %}
+    <div class="context-row">
+        <div class="context-item"><span class="context-label">Intent:</span><span class="context-value">{{ client.context.intent|default:"-" }}</span></div>
+        <div class="context-item"><span class="context-label">Sentiment:</span><span class="context-value sentiment-{{ client.context.sentiment|default:'neutral' }}">{{ client.context.sentiment|default:"-"|capfirst }}</span></div>
+        <div class="context-item"><span class="context-label">Urgency:</span><span class="context-value">{{ client.context.urgency|default:"-"|capfirst }}</span></div>
     </div>
     
+    {% if client.context.loan_details %}
+    <div class="context-section context-row">
+        {% with loan=client.context.loan_details %}
+        {% if loan.loan_type %}<div class="context-item"><span class="context-label">Loan:</span><span class="context-value">{{ loan.loan_type }}</span></div>{% endif %}
+        {% if loan.current_loan_amount %}<div class="context-item"><span class="context-label">Amount:</span><span class="context-value">{{ loan.current_loan_amount }}</span></div>{% endif %}
+        {% if loan.interest_rate %}<div class="context-item"><span class="context-label">Rate:</span><span class="context-value">{{ loan.interest_rate }}</span></div>{% endif %}
+        {% if loan.monthly_payment %}<div class="context-item"><span class="context-label">Payment:</span><span class="context-value">{{ loan.monthly_payment }}</span></div>{% endif %}
+        {% endwith %}
+    </div>
+    {% endif %}
+    
+    {% if client.context.financial_info %}
+    <div class="context-section context-row">
+        {% with fin=client.context.financial_info %}
+        {% if fin.income %}<div class="context-item"><span class="context-label">Income:</span><span class="context-value">{{ fin.income }}</span></div>{% endif %}
+        {% if fin.credit_score %}<div class="context-item"><span class="context-label">Credit:</span><span class="context-value">{{ fin.credit_score }}</span></div>{% endif %}
+        {% if fin.debt_to_income %}<div class="context-item"><span class="context-label">DTI:</span><span class="context-value">{{ fin.debt_to_income }}</span></div>{% endif %}
+        {% endwith %}
+    </div>
+    {% endif %}
+    
     {% if client.context.key_points %}
-    <div class="tags">{% for point in client.context.key_points %}<span class="tag">{{ point }}</span>{% endfor %}</div>
+    <div class="context-section">{% for point in client.context.key_points %}<span class="tag">{{ point }}</span>{% endfor %}</div>
     {% endif %}
 </div>
 {% endif %}
 
+{% if stage_history %}
 <div class="card">
-    <div class="card-header"><h2>History</h2></div>
-    <div class="history-list">
-        {% for history in stage_history %}
-        <div class="history-item">
-            {% if history.from_stage %}<span class="badge badge-{{ history.from_stage }}">{{ history.from_stage }}</span> &rarr; {% endif %}
-            <span class="badge badge-{{ history.to_stage }}">{{ history.to_stage }}</span>
-            {% if history.changed_by %}<span style="color:#7f8c8d;"> {{ history.changed_by.get_full_name|default:history.changed_by.email }}</span>{% endif %}
-            <span class="history-time"> {{ history.created_at|date:"M d H:i" }}</span>
-            {% if history.remarks %}<br><small style="color:#666;">{{ history.remarks }}</small>{% endif %}
-        </div>
-        {% empty %}
-        <p style="color: #7f8c8d; font-size: 0.8rem;">No history yet.</p>
-        {% endfor %}
+    {% for h in stage_history %}
+    <div class="history-item">
+        {% if h.from_stage %}<span class="badge badge-{{ h.from_stage }}">{{ h.from_stage }}</span>&rarr;{% endif %}
+        <span class="badge badge-{{ h.to_stage }}">{{ h.to_stage }}</span>
+        <span style="color:#999;">{{ h.created_at|date:"M d H:i" }}</span>
+        {% if h.remarks %}<span style="color:#666;">- {{ h.remarks }}</span>{% endif %}
     </div>
+    {% endfor %}
 </div>
+{% endif %}
 {% endblock %}
