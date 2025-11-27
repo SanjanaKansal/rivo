@@ -50,16 +50,38 @@ rivo/
   - Chat History management
   - Client management (Clients, Context, Stage History, Assignments)
 
-### Dashboard (Web UI)
+### Dashboard API (Token Auth)
+All endpoints require `Authorization: Token <token>` header (except login).
+
+**Authentication:**
+- `POST /api/v1/dashboard/login/` - Get auth token
+  - Request: `{"email": "...", "password": "..."}`
+  - Response: `{"token": "...", "user": {...}}`
+
+**Admin Endpoints (requires Admin role):**
+- `GET /api/v1/dashboard/admin/clients/` - Get all clients
+- `GET /api/v1/dashboard/admin/csm-users/` - Get CSM users for assignment
+- `POST /api/v1/dashboard/admin/assign/` - Assign client to CSM
+  - Request: `{"client_id": 1, "csm_id": 2}`
+
+**CSM Endpoints (requires CSM role):**
+- `GET /api/v1/dashboard/csm/clients/` - Get assigned clients only
+
+**Shared Endpoints (Admin or CSM):**
+- `GET /api/v1/dashboard/client/<id>/` - Get client details
+- `POST /api/v1/dashboard/client/<id>/stage/` - Change client stage
+  - Request: `{"new_stage": "contacted", "remarks": "optional"}`
+
+### Dashboard (Web UI) - Session Auth
 - `/dashboard/login/` - Login page
 - `/dashboard/` - Auto-redirects to Admin or CSM dashboard based on role
 - `/dashboard/admin/` - Admin dashboard (view all clients, assign to CSMs)
 - `/dashboard/csm/` - CSM dashboard (view assigned clients)
 - `/dashboard/client/<id>/` - Client detail view with stage management
 
-**Roles:**
-- **Admin**: Can view all clients and assign them to CSM users
-- **CSM** (Customer Success Manager): Can view assigned clients, see AI-extracted context, move clients through stages
+**Roles & Permissions:**
+- **Admin**: View all clients, assign clients to CSMs, view CSM list
+- **CSM** (Customer Success Manager): View assigned clients only, see AI-extracted context, move clients through stages
 
 ## Database Models
 
