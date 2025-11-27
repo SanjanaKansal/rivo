@@ -43,3 +43,7 @@ class User(AbstractUser, BaseModel):
     @property
     def can_change_client(self):
         return self.has_perm('client.change_client')
+
+    @property
+    def can_assign_client(self):
+        return self.has_perm('client.add_clientassignment') or self.has_perm('client.change_clientassignment')

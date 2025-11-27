@@ -37,18 +37,18 @@ def home_view(request):
         c.active_csm = a.assigned_to if a else None  # type: ignore
         clients.append(c)
     
-    csm_users = User.objects.filter(is_active=True).exclude(id=user.id) if user.can_change_client else []
+    csm_users = User.objects.filter(is_active=True).exclude(id=user.id) if user.can_assign_client else []
     
     return render(request, 'dashboard/dashboard.html', {
         'clients': clients, 'csm_users': csm_users, 
-        'perms': {'can_change_client': user.can_change_client},
+        'perms': {'can_change_client': user.can_change_client, 'can_assign_client': user.can_assign_client},
         'stage_choices': Client.STAGE_CHOICES
     })
 
 
 @login_required
 def assign_client(request):
-    if request.method != 'POST' or not request.user.can_change_client:
+    if request.method != 'POST' or not request.user.can_assign_client:
         return redirect('dashboard:home')
     
     client_id, user_id = request.POST.get('client_id'), request.POST.get('user_id')
