@@ -5,8 +5,8 @@ from .models import User, Role
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ['name', 'created_at']
-    search_fields = ['name']
+    list_display = ['name', 'description', 'created_at']
+    search_fields = ['name', 'description']
     filter_horizontal = ['permissions']
 
 

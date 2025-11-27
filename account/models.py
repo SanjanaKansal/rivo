@@ -12,6 +12,7 @@ class BaseModel(models.Model):
 
 class Role(BaseModel):
     name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, default='')
     permissions = models.ManyToManyField(Permission, blank=True, related_name='roles')
 
     def __str__(self):
