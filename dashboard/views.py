@@ -129,19 +129,16 @@ def client_detail(request, client_id):
         form = StageChangeForm(request.POST)
         if form.is_valid():
             new_stage = form.cleaned_data['new_stage']
-            remarks = form.cleaned_data['remarks']
-            
             if new_stage != client.current_stage:
                 ClientStageHistory.objects.create(
                     client=client,
                     from_stage=client.current_stage,
                     to_stage=new_stage,
-                    changed_by=user,
-                    remarks=remarks
+                    changed_by=user
                 )
                 client.current_stage = new_stage
                 client.save()
-                messages.success(request, f'Stage updated to {dict(Client.STAGE_CHOICES).get(new_stage)}')
+                messages.success(request, 'Stage updated')
                 return redirect('dashboard:client_detail', client_id=client_id)
     else:
         form = StageChangeForm(initial={'new_stage': client.current_stage})
