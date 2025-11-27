@@ -58,8 +58,17 @@ class Client(BaseModel):
 
     @property
     def is_complete(self):
-        """Helper to check if info is complete"""
         return all([self.name, self.email, self.phone])
+
+    def set_stage(self, new_stage, changed_by=None, remarks=''):
+        """Change stage and create history record"""
+        if new_stage != self.current_stage:
+            ClientStageHistory.objects.create(
+                client=self, from_stage=self.current_stage, to_stage=new_stage, 
+                changed_by=changed_by, remarks=remarks
+            )
+            self.current_stage = new_stage
+            self.save()
 
 
 class ClientStageHistory(BaseModel):

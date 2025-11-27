@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Client, ClientAssignment, ClientStageHistory
+from .models import Client, ClientAssignment
 from account.models import User
 
 
@@ -53,10 +53,10 @@ def client_detail(request, pk):
         for field in ['name', 'email', 'phone']:
             if field in data:
                 setattr(client, field, data[field])
+        client.save()
         
-        if 'stage' in data and data['stage'] != client.current_stage:
-            ClientStageHistory.objects.create(client=client, from_stage=client.current_stage, to_stage=data['stage'], changed_by=user)
-            client.current_stage = data['stage']
+        if 'stage' in data:
+            client.set_stage(data['stage'], changed_by=user)
         
         if 'assign_to' in data:
             try:
@@ -66,7 +66,6 @@ def client_detail(request, pk):
             except User.DoesNotExist:
                 pass
         
-        client.save()
         return Response({'message': 'Updated'})
     
     history = [{'from': h.from_stage, 'to': h.to_stage, 'by': h.changed_by.email if h.changed_by else None, 'at': h.created_at.isoformat()} 

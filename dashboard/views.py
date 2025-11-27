@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from client.models import Client, ClientAssignment, ClientStageHistory
+from client.models import Client, ClientAssignment
 from account.models import User
 from .forms import LoginForm, StageChangeForm
 
@@ -72,10 +72,8 @@ def client_detail(request, client_id):
     
     if request.method == 'POST':
         form = StageChangeForm(request.POST)
-        if form.is_valid() and form.cleaned_data['new_stage'] != client.current_stage:
-            ClientStageHistory.objects.create(client=client, from_stage=client.current_stage, to_stage=form.cleaned_data['new_stage'], changed_by=user)
-            client.current_stage = form.cleaned_data['new_stage']
-            client.save()
+        if form.is_valid():
+            client.set_stage(form.cleaned_data['new_stage'], changed_by=user)
             return redirect('dashboard:client_detail', client_id=client_id)
     else:
         form = StageChangeForm(initial={'new_stage': client.current_stage})
