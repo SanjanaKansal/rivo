@@ -4,71 +4,10 @@
 
 {% block content %}
 <div class="page-header">
-    <h1>Admin Dashboard</h1>
-    <p>Manage clients and assign them to CSM team members</p>
-</div>
-
-<div class="grid-2">
-    <div class="card">
-        <div class="card-header">
-            <h2>Assign Client to CSM</h2>
-        </div>
-        
-        {% if unassigned_clients and csm_users %}
-        <form method="post">
-            {% csrf_token %}
-            <div class="form-group">
-                <label class="form-label">Select Client</label>
-                <select name="client_id" class="form-select" required>
-                    <option value="">-- Select a client --</option>
-                    {% for client in unassigned_clients %}
-                    <option value="{{ client.id }}">{{ client.name }} ({{ client.email }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Assign to CSM</label>
-                <select name="csm_id" class="form-select" required>
-                    <option value="">-- Select a CSM --</option>
-                    {% for csm in csm_users %}
-                    <option value="{{ csm.id }}">{{ csm.get_full_name|default:csm.email }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">Assign Client</button>
-        </form>
-        {% else %}
-        <p style="color: #7f8c8d;">
-            {% if not unassigned_clients %}No unassigned clients available.{% endif %}
-            {% if not csm_users %}No CSM users available. Create users with CSM role first.{% endif %}
-        </p>
-        {% endif %}
-    </div>
-    
-    <div class="card">
-        <div class="card-header">
-            <h2>Quick Stats</h2>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-            <div style="text-align: center; padding: 1rem; background: #e8f4fd; border-radius: 8px;">
-                <div style="font-size: 2rem; font-weight: bold; color: #2980b9;">{{ clients.count }}</div>
-                <div style="color: #7f8c8d;">Total Clients</div>
-            </div>
-            <div style="text-align: center; padding: 1rem; background: #e8f8f5; border-radius: 8px;">
-                <div style="font-size: 2rem; font-weight: bold; color: #27ae60;">{{ csm_users.count }}</div>
-                <div style="color: #7f8c8d;">CSM Team</div>
-            </div>
-        </div>
-    </div>
+    <h1>All Clients</h1>
 </div>
 
 <div class="card">
-    <div class="card-header">
-        <h2>All Clients</h2>
-    </div>
-    
     {% if clients %}
     <table class="table">
         <thead>
@@ -78,7 +17,6 @@
                 <th>Phone</th>
                 <th>Stage</th>
                 <th>Assigned To</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -92,11 +30,18 @@
                     {% if client.active_csm %}
                         {{ client.active_csm.get_full_name|default:client.active_csm.email }}
                     {% else %}
-                        <span style="color: #e74c3c;">Unassigned</span>
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="client_id" value="{{ client.id }}">
+                            <select name="csm_id" class="form-select" style="width: auto; display: inline-block; padding: 0.3rem;" required>
+                                <option value="">Assign to...</option>
+                                {% for csm in csm_users %}
+                                <option value="{{ csm.id }}">{{ csm.get_full_name|default:csm.email }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Assign</button>
+                        </form>
                     {% endif %}
-                </td>
-                <td>
-                    <a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">View</a>
                 </td>
             </tr>
             {% endfor %}
