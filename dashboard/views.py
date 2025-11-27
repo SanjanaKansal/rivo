@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from client.models import Client, ClientAssignment
+from client.models import Client
 from account.models import User
 from .forms import LoginForm, StageChangeForm
 
@@ -57,8 +57,7 @@ def assign_client(request):
     if client_id and user_id:
         client = get_object_or_404(Client, id=client_id)
         csm = get_object_or_404(User, id=user_id, is_active=True)
-        ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
-        ClientAssignment.objects.create(client=client, assigned_to=csm, assigned_by=request.user, is_active=True)
+        client.assign(assigned_to=csm, assigned_by=request.user)
     
     return redirect('dashboard:home')
 

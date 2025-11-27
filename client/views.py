@@ -2,15 +2,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Client, ClientAssignment
+from .models import Client
 from account.models import User
 
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def clients(request):
-    user = request.user
-    
     if request.method == 'POST':
         data = request.data
         client = Client.objects.create(
@@ -60,8 +58,7 @@ def client_detail(request, pk):
         if 'assign_to' in data:
             try:
                 assign_to = User.objects.get(pk=data['assign_to'], is_active=True)
-                ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
-                ClientAssignment.objects.create(client=client, assigned_to=assign_to, assigned_by=user, is_active=True)
+                client.assign(assigned_to=assign_to, assigned_by=user)
             except User.DoesNotExist:
                 pass
         

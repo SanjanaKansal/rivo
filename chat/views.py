@@ -1,7 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from client.models import ClientAssignment
 from client.services import summarize_chat_history
 from .models import ChatHistory, Client
 from .serializers import ChatHistorySerializer, SendMessageSerializer
@@ -30,7 +29,9 @@ class ChatViewSet(viewsets.ViewSet):
             self._update_client_info(client, data_type, message)
 
             if client.is_complete:
-                self._initialize_client_workflow(client, session_id)
+                messages = ChatHistory.objects.filter(session_id=session_id, data_type='message').values('sender_type', 'message')
+                context = summarize_chat_history(list(messages))
+                client.initialize(context=context)
 
         chat_message = ChatHistory.objects.create(
             session_id=session_id, client=client, message=message, sender_type=sender_type, data_type=data_type
@@ -59,15 +60,3 @@ class ChatViewSet(viewsets.ViewSet):
         elif data_type == 'phone':
             client.phone = re.sub(r'\D', '', message)
         client.save()
-
-    def _initialize_client_workflow(self, client, session_id):
-        if client.stage_history.exists():
-            return
-
-        messages = ChatHistory.objects.filter(session_id=session_id, data_type='message').values('sender_type', 'message')
-        client.context = summarize_chat_history(list(messages))
-        client.save()
-
-        client.set_stage('lead', remarks='Client information collected via chat.')
-
-        ClientAssignment.objects.create(client=client, assigned_to=None, assigned_by=None, remarks='Awaiting assignment')

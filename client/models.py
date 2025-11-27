@@ -65,6 +65,21 @@ class Client(BaseModel):
             self.current_stage = new_stage
             self.save()
 
+    def assign(self, assigned_to=None, assigned_by=None, remarks=''):
+        """Assign client to a user, deactivating previous assignment"""
+        ClientAssignment.objects.filter(client=self, is_active=True).update(is_active=False)
+        ClientAssignment.objects.create(client=self, assigned_to=assigned_to, assigned_by=assigned_by, is_active=True, remarks=remarks)
+
+    def initialize(self, context=None, remarks='Client information collected via chat.'):
+        """Initialize new client workflow - set stage and create pending assignment"""
+        if self.stage_history.exists():
+            return
+        if context:
+            self.context = context
+            self.save()
+        self.set_stage('lead', remarks=remarks)
+        self.assign(remarks='Awaiting assignment')
+
 
 class ClientStageHistory(BaseModel):
     """
