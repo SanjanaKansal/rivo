@@ -1,0 +1,111 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Admin Dashboard - Rivo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p>Manage clients and assign them to CSM team members</p>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2>Assign Client to CSM</h2>
+        </div>
+        
+        {% if unassigned_clients and csm_users %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Select Client</label>
+                <select name="client_id" class="form-select" required>
+                    <option value="">-- Select a client --</option>
+                    {% for client in unassigned_clients %}
+                    <option value="{{ client.id }}">{{ client.name }} ({{ client.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Assign to CSM</label>
+                <select name="csm_id" class="form-select" required>
+                    <option value="">-- Select a CSM --</option>
+                    {% for csm in csm_users %}
+                    <option value="{{ csm.id }}">{{ csm.get_full_name|default:csm.email }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Assign Client</button>
+        </form>
+        {% else %}
+        <p style="color: #7f8c8d;">
+            {% if not unassigned_clients %}No unassigned clients available.{% endif %}
+            {% if not csm_users %}No CSM users available. Create users with CSM role first.{% endif %}
+        </p>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2>Quick Stats</h2>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div style="text-align: center; padding: 1rem; background: #e8f4fd; border-radius: 8px;">
+                <div style="font-size: 2rem; font-weight: bold; color: #2980b9;">{{ clients.count }}</div>
+                <div style="color: #7f8c8d;">Total Clients</div>
+            </div>
+            <div style="text-align: center; padding: 1rem; background: #e8f8f5; border-radius: 8px;">
+                <div style="font-size: 2rem; font-weight: bold; color: #27ae60;">{{ csm_users.count }}</div>
+                <div style="color: #7f8c8d;">CSM Team</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>All Clients</h2>
+    </div>
+    
+    {% if clients %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Stage</th>
+                <th>Assigned To</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in clients %}
+            <tr>
+                <td><strong>{{ client.name|default:"-" }}</strong></td>
+                <td>{{ client.email|default:"-" }}</td>
+                <td>{{ client.phone|default:"-" }}</td>
+                <td><span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span></td>
+                <td>
+                    {% with assignment=client.assignments.all|first %}
+                        {% if assignment and assignment.is_active %}
+                            {{ assignment.assigned_to.get_full_name|default:assignment.assigned_to.email }}
+                        {% else %}
+                            <span style="color: #e74c3c;">Unassigned</span>
+                        {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    <a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #7f8c8d; text-align: center; padding: 2rem;">No clients found.</p>
+    {% endif %}
+</div>
+{% endblock %}

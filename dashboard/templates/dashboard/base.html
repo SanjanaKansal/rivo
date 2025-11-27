@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Rivo Dashboard{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: #2c3e50;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #ecf0f1;
+        }
+        
+        .navbar-user span {
+            font-size: 0.9rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #219a52;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        
+        .page-header h1 {
+            font-size: 1.75rem;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-header p {
+            color: #7f8c8d;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .card-header h2 {
+            font-size: 1.25rem;
+            color: #2c3e50;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #34495e;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .table th, .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #34495e;
+        }
+        
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .badge-lead { background: #e8f4fd; color: #2980b9; }
+        .badge-contacted { background: #fef3e2; color: #e67e22; }
+        .badge-qualified { background: #e8f8f5; color: #27ae60; }
+        .badge-docs_pending { background: #fdeaea; color: #c0392b; }
+        .badge-docs_received { background: #e8f8f5; color: #27ae60; }
+        .badge-application_started { background: #f4e8fd; color: #8e44ad; }
+        .badge-application_submitted { background: #e8f4fd; color: #2980b9; }
+        .badge-application_in_process { background: #fef3e2; color: #e67e22; }
+        .badge-application_approved { background: #e8f8f5; color: #27ae60; }
+        .badge-disbursed { background: #e8f8f5; color: #16a085; }
+        .badge-active { background: #e8f8f5; color: #27ae60; }
+        .badge-lost { background: #eee; color: #7f8c8d; }
+        .badge-closed { background: #e8f4fd; color: #34495e; }
+        .badge-rejected { background: #fdeaea; color: #c0392b; }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{% url 'dashboard:home' %}" class="navbar-brand">Rivo</a>
+        {% if user.is_authenticated %}
+        <div class="navbar-user">
+            <span>{{ user.get_full_name|default:user.email }}</span>
+            <a href="{% url 'dashboard:logout' %}" class="btn btn-secondary">Logout</a>
+        </div>
+        {% endif %}
+    </nav>
+    
+    <div class="container">
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

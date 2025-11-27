@@ -1,0 +1,277 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ client.name }} - Rivo{% endblock %}
+
+{% block content %}
+<style>
+    .back-link {
+        display: inline-block;
+        margin-bottom: 1rem;
+        color: #3498db;
+        text-decoration: none;
+    }
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .context-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .context-section h4 {
+        color: #2c3e50;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .context-item {
+        display: flex;
+        margin-bottom: 0.5rem;
+    }
+    
+    .context-label {
+        font-weight: 500;
+        color: #7f8c8d;
+        min-width: 140px;
+    }
+    
+    .context-value {
+        color: #2c3e50;
+    }
+    
+    .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .tag {
+        background: #e8f4fd;
+        color: #2980b9;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    
+    .history-item {
+        padding: 0.75rem;
+        border-left: 3px solid #3498db;
+        margin-bottom: 0.75rem;
+        background: #f8f9fa;
+    }
+    
+    .history-item .time {
+        font-size: 0.8rem;
+        color: #7f8c8d;
+    }
+    
+    .sentiment-positive { color: #27ae60; }
+    .sentiment-neutral { color: #f39c12; }
+    .sentiment-negative { color: #e74c3c; }
+    
+    .urgency-low { color: #27ae60; }
+    .urgency-medium { color: #f39c12; }
+    .urgency-high { color: #e74c3c; font-weight: bold; }
+</style>
+
+<a href="{% if is_admin %}{% url 'dashboard:admin_dashboard' %}{% else %}{% url 'dashboard:csm_dashboard' %}{% endif %}" class="back-link">&larr; Back to Dashboard</a>
+
+<div class="page-header">
+    <h1>{{ client.name|default:"Unnamed Client" }}</h1>
+    <p>
+        <span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span>
+    </p>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2>Contact Information</h2>
+        </div>
+        <div class="context-item">
+            <span class="context-label">Name:</span>
+            <span class="context-value">{{ client.name|default:"-" }}</span>
+        </div>
+        <div class="context-item">
+            <span class="context-label">Email:</span>
+            <span class="context-value">{{ client.email|default:"-" }}</span>
+        </div>
+        <div class="context-item">
+            <span class="context-label">Phone:</span>
+            <span class="context-value">{{ client.phone|default:"-" }}</span>
+        </div>
+        <div class="context-item">
+            <span class="context-label">Created:</span>
+            <span class="context-value">{{ client.created_at|date:"M d, Y H:i" }}</span>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2>Change Stage</h2>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">New Stage</label>
+                {{ form.new_stage }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">Remarks (optional)</label>
+                {{ form.remarks }}
+            </div>
+            <button type="submit" class="btn btn-success">Update Stage</button>
+        </form>
+    </div>
+</div>
+
+{% if client.context %}
+<div class="card">
+    <div class="card-header">
+        <h2>AI-Extracted Context</h2>
+    </div>
+    
+    <div class="grid-2">
+        <div>
+            <div class="context-section">
+                <h4>Summary</h4>
+                <p>{{ client.context.summary|default:"No summary available" }}</p>
+            </div>
+            
+            <div class="context-section">
+                <h4>Client Intent</h4>
+                <p>{{ client.context.intent|default:"Not identified" }}</p>
+            </div>
+            
+            <div class="context-item" style="margin-top: 1rem;">
+                <span class="context-label">Sentiment:</span>
+                <span class="context-value sentiment-{{ client.context.sentiment|default:'neutral' }}">
+                    {{ client.context.sentiment|default:"Unknown"|capfirst }}
+                </span>
+            </div>
+            
+            <div class="context-item">
+                <span class="context-label">Urgency:</span>
+                <span class="context-value urgency-{{ client.context.urgency|default:'low' }}">
+                    {{ client.context.urgency|default:"Unknown"|capfirst }}
+                </span>
+            </div>
+        </div>
+        
+        <div>
+            {% if client.context.loan_details %}
+            <div class="context-section">
+                <h4>Loan Details</h4>
+                {% with loan=client.context.loan_details %}
+                <div class="context-item">
+                    <span class="context-label">Loan Type:</span>
+                    <span class="context-value">{{ loan.loan_type|default:"-" }}</span>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">Loan Amount:</span>
+                    <span class="context-value">{{ loan.current_loan_amount|default:"-" }}</span>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">Monthly Payment:</span>
+                    <span class="context-value">{{ loan.monthly_payment|default:"-" }}</span>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">Interest Rate:</span>
+                    <span class="context-value">{{ loan.interest_rate|default:"-" }}</span>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">Property Type:</span>
+                    <span class="context-value">{{ loan.property_type|default:"-" }}</span>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">Property Value:</span>
+                    <span class="context-value">{{ loan.property_value|default:"-" }}</span>
+                </div>
+                {% endwith %}
+            </div>
+            {% endif %}
+            
+            {% if client.context.financial_info %}
+            <div class="context-section">
+                <h4>Financial Information</h4>
+                {% with fin=client.context.financial_info %}
+                <div class="context-item">
+                    <span class="context-label">Income:</span>
+                    <span class="context-value">{{ fin.income|default:"-" }}</span>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">Credit Score:</span>
+                    <span class="context-value">{{ fin.credit_score|default:"-" }}</span>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">Debt-to-Income:</span>
+                    <span class="context-value">{{ fin.debt_to_income|default:"-" }}</span>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">Employment:</span>
+                    <span class="context-value">{{ fin.employment_status|default:"-" }}</span>
+                </div>
+                {% endwith %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if client.context.preferences %}
+    <div class="context-section">
+        <h4>Preferences</h4>
+        <div class="tag-list">
+            {% for pref in client.context.preferences %}
+            <span class="tag">{{ pref }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if client.context.key_points %}
+    <div class="context-section">
+        <h4>Key Points</h4>
+        <ul style="margin-left: 1.5rem;">
+            {% for point in client.context.key_points %}
+            <li>{{ point }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h2>Stage History</h2>
+    </div>
+    
+    {% if stage_history %}
+    {% for history in stage_history %}
+    <div class="history-item">
+        <div>
+            {% if history.from_stage %}
+            <span class="badge badge-{{ history.from_stage }}">{{ history.from_stage }}</span>
+            &rarr;
+            {% endif %}
+            <span class="badge badge-{{ history.to_stage }}">{{ history.to_stage }}</span>
+            {% if history.changed_by %}
+            <span style="color: #7f8c8d;"> by {{ history.changed_by.get_full_name|default:history.changed_by.email }}</span>
+            {% endif %}
+        </div>
+        {% if history.remarks %}
+        <p style="margin-top: 0.5rem; color: #555;">{{ history.remarks }}</p>
+        {% endif %}
+        <div class="time">{{ history.created_at|date:"M d, Y H:i" }}</div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p style="color: #7f8c8d;">No stage changes recorded yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

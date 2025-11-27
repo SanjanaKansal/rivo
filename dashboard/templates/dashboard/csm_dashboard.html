@@ -1,0 +1,47 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}My Clients - Rivo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>My Clients</h1>
+    <p>View and manage clients assigned to you</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Assigned Clients ({{ clients.count }})</h2>
+    </div>
+    
+    {% if clients %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Stage</th>
+                <th>Intent</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in clients %}
+            <tr>
+                <td><strong>{{ client.name|default:"-" }}</strong></td>
+                <td>{{ client.email|default:"-" }}</td>
+                <td>{{ client.phone|default:"-" }}</td>
+                <td><span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span></td>
+                <td>{{ client.context.intent|default:"-"|truncatechars:30 }}</td>
+                <td>
+                    <a href="{% url 'dashboard:client_detail' client.id %}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">View Details</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #7f8c8d; text-align: center; padding: 2rem;">No clients assigned to you yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

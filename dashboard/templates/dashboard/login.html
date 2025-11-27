@@ -1,0 +1,65 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Login - Rivo{% endblock %}
+
+{% block content %}
+<style>
+    .login-container {
+        max-width: 400px;
+        margin: 4rem auto;
+    }
+    
+    .login-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        padding: 2rem;
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .login-header h1 {
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .login-header p {
+        color: #7f8c8d;
+    }
+    
+    .login-btn {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 1rem;
+        margin-top: 1rem;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1>Welcome Back</h1>
+            <p>Sign in to your dashboard</p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label" for="id_email">Email</label>
+                {{ form.email }}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="id_password">Password</label>
+                {{ form.password }}
+            </div>
+            
+            <button type="submit" class="btn btn-primary login-btn">Sign In</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

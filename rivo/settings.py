@@ -44,8 +44,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'account',
     'chat',
-    'client'
+    'client',
+    'dashboard',
 ]
+
+LOGIN_URL = '/dashboard/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/dashboard/login/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
