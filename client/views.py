@@ -6,19 +6,11 @@ from .models import Client, ClientAssignment, ClientStageHistory
 from account.models import User
 
 
-def get_permissions(user):
-    return {
-        'can_view_all': user.has_perm('client.view_all_clients') or user.is_superuser,
-        'can_assign': user.has_perm('client.assign_client') or user.is_superuser,
-        'can_change_stage': user.has_perm('client.change_client_stage') or user.is_superuser,
-    }
-
-
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def clients(request):
     user = request.user
-    perms = get_permissions(user)
+    perms = user.get_permissions()
     
     if request.method == 'POST':
         data = request.data
@@ -57,7 +49,7 @@ def clients(request):
 @permission_classes([IsAuthenticated])
 def client_detail(request, pk):
     user = request.user
-    perms = get_permissions(user)
+    perms = user.get_permissions()
     
     try:
         if perms['can_view_all']:

@@ -58,3 +58,11 @@ class User(AbstractUser, BaseModel):
         if self.role and self.role.permissions.filter(codename=perm.split('.')[-1]).exists():
             return True
         return super().has_perm(perm, obj)
+
+    def get_permissions(self):
+        """Get dashboard permissions dict"""
+        return {
+            'can_view_all': self.has_perm('client.view_all_clients'),
+            'can_assign': self.has_perm('client.assign_client'),
+            'can_change_stage': self.has_perm('client.change_client_stage'),
+        }

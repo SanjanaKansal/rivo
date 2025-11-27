@@ -7,14 +7,6 @@ from account.models import User
 from .forms import LoginForm, StageChangeForm
 
 
-def get_permissions(user):
-    return {
-        'can_view_all': user.has_perm('client.view_all_clients') or user.is_superuser,
-        'can_assign': user.has_perm('client.assign_client') or user.is_superuser,
-        'can_change_stage': user.has_perm('client.change_client_stage') or user.is_superuser,
-    }
-
-
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard:home')
@@ -40,7 +32,7 @@ def logout_view(request):
 @login_required
 def home_view(request):
     user = request.user
-    perms = get_permissions(user)
+    perms = user.get_permissions()
     
     if perms['can_view_all']:
         clients_qs = Client.objects.all()
@@ -68,7 +60,7 @@ def assign_client(request):
         return redirect('dashboard:home')
     
     user = request.user
-    perms = get_permissions(user)
+    perms = user.get_permissions()
     
     if not perms['can_assign']:
         return redirect('dashboard:home')
@@ -86,7 +78,7 @@ def assign_client(request):
 @login_required
 def client_detail(request, client_id):
     user = request.user
-    perms = get_permissions(user)
+    perms = user.get_permissions()
     
     if perms['can_view_all']:
         client = get_object_or_404(Client, id=client_id)
