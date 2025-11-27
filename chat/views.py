@@ -133,8 +133,9 @@ class ChatViewSet(viewsets.ViewSet):
             return
 
         messages = ChatHistory.objects.filter(
-            session_id=session_id
-        ).values('sender_type', 'message', 'data_type')
+            session_id=session_id,
+            data_type='message'
+        ).values('sender_type', 'message')
         
         context = summarize_chat_history(list(messages))
         client.context = context

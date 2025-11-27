@@ -23,17 +23,9 @@ def summarize_chat_history(messages):
     if not messages:
         return {}
     
-    conversation_messages = [
-        m for m in messages 
-        if m.get('data_type') == 'message'
-    ]
-    
-    if not conversation_messages:
-        return {}
-    
     chat_transcript = "\n".join([
         f"{'Client' if m.get('sender_type') == 'client' else 'Bot'}: {m.get('message', '')}"
-        for m in conversation_messages
+        for m in messages
     ])
     
     prompt = f"""Analyze this mortgage-related chat conversation and extract key information in JSON format.
