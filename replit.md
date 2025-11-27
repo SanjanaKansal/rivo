@@ -29,6 +29,7 @@ rivo/
 - Django 4.2.26
 - Django REST Framework 3.14.0
 - PostgreSQL database (Supabase)
+- OpenAI API (via Replit AI Integrations)
 - Gunicorn (production deployment)
 
 ## API Endpoints
@@ -56,13 +57,19 @@ rivo/
 ### Chat App  
 - **ChatHistory**: Store chat messages by session (API endpoints available)
 
-### Client App (Models only - no API endpoints yet)
-- **Client**: Lead/client information with stage tracking
-- **ClientContext**: Additional context data stored as JSON
+### Client App
+- **Client**: Lead/client information with stage tracking and AI-summarized context
+  - `context` field: JSON containing AI-extracted intent, preferences, key points, sentiment, urgency, and summary from chat history
 - **ClientStageHistory**: Track stage transitions
 - **ClientAssignment**: Manage client assignments to customer support users
 
-Note: The client models exist in the database but do not have REST API endpoints or admin interface configured yet.
+**AI Context Extraction**: When a client provides name, email, and phone via chat, OpenAI automatically summarizes the conversation and extracts:
+- Intent (client's main goal)
+- Preferences (mentioned preferences)
+- Key points (important details)
+- Sentiment (positive/neutral/negative)
+- Urgency (low/medium/high)
+- Summary (1-2 sentence overview)
 
 ## Development Setup
 
@@ -115,10 +122,16 @@ The project is configured for deployment using:
 
 ## Recent Changes
 
+- November 27, 2025: Added AI context extraction for clients
+  - Added `context` JSONField to Client model
+  - Created OpenAI service for chat history summarization
+  - Integrated Replit AI Integrations for OpenAI access
+  - Auto-extracts intent, preferences, sentiment from chat when client info is complete
+
 - November 26, 2025: Connected to Supabase PostgreSQL
   - Configured DATABASE_URL with Supabase connection pooler
   - Ran migrations on Supabase database
-  - Chat admin already registered
+  - Registered all admin interfaces
 
 - November 26, 2025: Initial Replit environment setup
   - Configured Django settings for Replit
