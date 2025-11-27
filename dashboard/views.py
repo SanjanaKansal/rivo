@@ -67,25 +67,6 @@ def home_view(request):
     if perms['can_assign']:
         csm_users = User.objects.filter(is_active=True).exclude(id=user.id)
     
-    if request.method == 'POST' and perms['can_assign']:
-        client_id = request.POST.get('client_id')
-        csm_id = request.POST.get('csm_id')
-        
-        if client_id and csm_id:
-            client = get_object_or_404(Client, id=client_id)
-            csm = get_object_or_404(User, id=csm_id, is_active=True)
-            
-            ClientAssignment.objects.filter(client=client, is_active=True).update(is_active=False)
-            
-            ClientAssignment.objects.create(
-                client=client,
-                assigned_to=csm,
-                assigned_by=user,
-                is_active=True
-            )
-            messages.success(request, f'Client assigned to {csm.get_full_name() or csm.email}')
-            return redirect('dashboard:home')
-    
     context = {
         'clients': clients,
         'csm_users': csm_users,
