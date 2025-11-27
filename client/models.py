@@ -30,7 +30,7 @@ class Client(BaseModel):
     context = models.JSONField(
         default=dict,
         blank=True,
-        help_text="AI-summarized context from chat history (intent, preferences, etc.)"
+        help_text="AI-summarized context (intent, preferences, etc.)"
     )
     current_stage = models.CharField(
         max_length=50,
