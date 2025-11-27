@@ -4,71 +4,61 @@
 
 {% block content %}
 <style>
-    .back-link {
-        display: inline-block;
-        margin-bottom: 1rem;
-        color: #3498db;
-        text-decoration: none;
-    }
+    .back-link { color: #3498db; text-decoration: none; font-size: 0.8rem; }
     .back-link:hover { text-decoration: underline; }
     
     .client-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .client-info { flex: 1; min-width: 250px; }
-    .client-info h1 { margin-bottom: 0.5rem; color: #2c3e50; }
-    .client-info p { color: #7f8c8d; margin: 0.25rem 0; }
-    
-    .stage-form {
-        display: flex;
         align-items: center;
-        gap: 0.5rem;
         flex-wrap: wrap;
+        gap: 0.5rem;
     }
+    
+    .client-info h1 { font-size: 1.1rem; margin: 0; color: #2c3e50; }
+    .client-info p { color: #7f8c8d; margin: 0; font-size: 0.8rem; }
+    
+    .stage-form { display: flex; align-items: center; gap: 0.4rem; }
+    
+    .summary-text { font-size: 0.9rem; margin-bottom: 0.75rem; color: #34495e; }
     
     .context-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.5rem;
     }
     
     .context-box {
         background: #f8f9fa;
-        border-radius: 8px;
-        padding: 1rem;
+        border-radius: 4px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
     }
     
     .context-box h4 {
         color: #2c3e50;
-        margin-bottom: 0.75rem;
-        font-size: 0.85rem;
+        margin: 0 0 0.4rem 0;
+        font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 0.3rem;
     }
     
     .info-row {
         display: flex;
         justify-content: space-between;
-        padding: 0.4rem 0;
-        border-bottom: 1px solid #eee;
+        padding: 0.2rem 0;
     }
-    .info-row:last-child { border-bottom: none; }
-    .info-label { color: #7f8c8d; font-size: 0.9rem; }
-    .info-value { color: #2c3e50; font-weight: 500; }
+    .info-label { color: #7f8c8d; font-size: 0.75rem; }
+    .info-value { color: #2c3e50; font-size: 0.8rem; }
     
-    .tag { background: #e8f4fd; color: #2980b9; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; margin: 0.2rem; display: inline-block; }
+    .tags { margin-top: 0.5rem; }
+    .tag { background: #e8f4fd; color: #2980b9; padding: 0.1rem 0.4rem; border-radius: 8px; font-size: 0.7rem; margin-right: 0.3rem; }
     
-    .history-list { max-height: 300px; overflow-y: auto; }
-    .history-item { padding: 0.5rem; border-left: 3px solid #3498db; margin-bottom: 0.5rem; background: #f8f9fa; font-size: 0.9rem; }
-    .history-time { color: #7f8c8d; font-size: 0.8rem; }
+    .history-list { font-size: 0.8rem; }
+    .history-item { padding: 0.4rem 0.5rem; border-left: 2px solid #3498db; margin-bottom: 0.4rem; background: #f8f9fa; }
+    .history-time { color: #7f8c8d; font-size: 0.7rem; }
     
     .sentiment-positive { color: #27ae60; }
     .sentiment-neutral { color: #f39c12; }
@@ -80,19 +70,17 @@
 <div class="card">
     <div class="client-header">
         <div class="client-info">
-            <h1>{{ client.name|default:"Unnamed Client" }}</h1>
-            <p>{{ client.email|default:"-" }} | {{ client.phone|default:"-" }}</p>
-            <p style="font-size: 0.85rem;">Created: {{ client.created_at|date:"M d, Y" }}</p>
+            <h1>{{ client.name|default:"Unnamed" }}</h1>
+            <p>{{ client.email|default:"-" }} | {{ client.phone|default:"-" }} | {{ client.created_at|date:"M d, Y" }}</p>
         </div>
-        
         {% if perms.can_change_stage %}
         <form method="post" class="stage-form">
             {% csrf_token %}
             {{ form.new_stage }}
-            <button type="submit" class="btn btn-success" style="padding: 0.5rem 1rem;">Update Stage</button>
+            <button type="submit" class="btn btn-success">Update</button>
         </form>
         {% else %}
-        <span class="badge badge-{{ client.current_stage }}" style="font-size: 1rem; padding: 0.5rem 1rem;">{{ client.get_current_stage_display }}</span>
+        <span class="badge badge-{{ client.current_stage }}">{{ client.get_current_stage_display }}</span>
         {% endif %}
     </div>
 </div>
@@ -100,36 +88,23 @@
 {% if client.context %}
 <div class="card">
     <div class="card-header"><h2>AI Summary</h2></div>
-    
-    {% if client.context.summary %}
-    <p style="margin-bottom: 1rem; font-size: 1.05rem;">{{ client.context.summary }}</p>
-    {% endif %}
+    {% if client.context.summary %}<p class="summary-text">{{ client.context.summary }}</p>{% endif %}
     
     <div class="context-grid">
         <div class="context-box">
             <h4>Overview</h4>
-            <div class="info-row">
-                <span class="info-label">Intent</span>
-                <span class="info-value">{{ client.context.intent|default:"-" }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Sentiment</span>
-                <span class="info-value sentiment-{{ client.context.sentiment|default:'neutral' }}">{{ client.context.sentiment|default:"-"|capfirst }}</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Urgency</span>
-                <span class="info-value">{{ client.context.urgency|default:"-"|capfirst }}</span>
-            </div>
+            <div class="info-row"><span class="info-label">Intent</span><span class="info-value">{{ client.context.intent|default:"-" }}</span></div>
+            <div class="info-row"><span class="info-label">Sentiment</span><span class="info-value sentiment-{{ client.context.sentiment|default:'neutral' }}">{{ client.context.sentiment|default:"-"|capfirst }}</span></div>
+            <div class="info-row"><span class="info-label">Urgency</span><span class="info-value">{{ client.context.urgency|default:"-"|capfirst }}</span></div>
         </div>
         
         {% if client.context.loan_details %}
         <div class="context-box">
-            <h4>Loan Details</h4>
+            <h4>Loan</h4>
             {% with loan=client.context.loan_details %}
             <div class="info-row"><span class="info-label">Type</span><span class="info-value">{{ loan.loan_type|default:"-" }}</span></div>
             <div class="info-row"><span class="info-label">Amount</span><span class="info-value">{{ loan.current_loan_amount|default:"-" }}</span></div>
             <div class="info-row"><span class="info-label">Rate</span><span class="info-value">{{ loan.interest_rate|default:"-" }}</span></div>
-            <div class="info-row"><span class="info-label">Payment</span><span class="info-value">{{ loan.monthly_payment|default:"-" }}</span></div>
             {% endwith %}
         </div>
         {% endif %}
@@ -147,29 +122,24 @@
     </div>
     
     {% if client.context.key_points %}
-    <div style="margin-top: 1rem;">
-        <strong>Key Points:</strong>
-        {% for point in client.context.key_points %}
-        <span class="tag">{{ point }}</span>
-        {% endfor %}
-    </div>
+    <div class="tags">{% for point in client.context.key_points %}<span class="tag">{{ point }}</span>{% endfor %}</div>
     {% endif %}
 </div>
 {% endif %}
 
 <div class="card">
-    <div class="card-header"><h2>Stage History</h2></div>
+    <div class="card-header"><h2>History</h2></div>
     <div class="history-list">
         {% for history in stage_history %}
         <div class="history-item">
             {% if history.from_stage %}<span class="badge badge-{{ history.from_stage }}">{{ history.from_stage }}</span> &rarr; {% endif %}
             <span class="badge badge-{{ history.to_stage }}">{{ history.to_stage }}</span>
-            {% if history.changed_by %}<span style="color: #7f8c8d;"> by {{ history.changed_by.get_full_name|default:history.changed_by.email }}</span>{% endif %}
-            {% if history.remarks %}<br><small>{{ history.remarks }}</small>{% endif %}
-            <div class="history-time">{{ history.created_at|date:"M d, Y H:i" }}</div>
+            {% if history.changed_by %}<span style="color:#7f8c8d;"> {{ history.changed_by.get_full_name|default:history.changed_by.email }}</span>{% endif %}
+            <span class="history-time"> {{ history.created_at|date:"M d H:i" }}</span>
+            {% if history.remarks %}<br><small style="color:#666;">{{ history.remarks }}</small>{% endif %}
         </div>
         {% empty %}
-        <p style="color: #7f8c8d;">No history yet.</p>
+        <p style="color: #7f8c8d; font-size: 0.8rem;">No history yet.</p>
         {% endfor %}
     </div>
 </div>

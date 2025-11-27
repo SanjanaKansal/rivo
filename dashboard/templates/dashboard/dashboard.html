@@ -8,9 +8,9 @@
 </div>
 
 <div class="card">
-    <div style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-        <input type="text" id="searchFilter" class="form-input" placeholder="Search by name, email, phone..." style="max-width: 300px;" onkeyup="filterClients()">
-        <select id="stageFilter" class="form-select" style="max-width: 200px;" onchange="filterClients()">
+    <div style="margin-bottom: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <input type="text" id="searchFilter" class="form-input" placeholder="Search..." style="max-width: 200px;" onkeyup="filterClients()">
+        <select id="stageFilter" class="form-select" style="max-width: 150px;" onchange="filterClients()">
             <option value="">All Stages</option>
             {% for stage_key, stage_name in stage_choices %}
             <option value="{{ stage_key }}">{{ stage_name }}</option>
