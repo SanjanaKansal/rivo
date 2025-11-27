@@ -8,6 +8,16 @@
 </div>
 
 <div class="card">
+    <div style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+        <input type="text" id="searchFilter" class="form-input" placeholder="Search by name, email, phone..." style="max-width: 300px;" onkeyup="filterClients()">
+        <select id="stageFilter" class="form-select" style="max-width: 200px;" onchange="filterClients()">
+            <option value="">All Stages</option>
+            {% for stage_key, stage_name in stage_choices %}
+            <option value="{{ stage_key }}">{{ stage_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
     {% if clients %}
     <table class="table">
         <thead>
@@ -24,7 +34,7 @@
         </thead>
         <tbody>
             {% for client in clients %}
-            <tr>
+            <tr data-stage="{{ client.current_stage }}">
                 <td><strong>{{ client.name|default:"-" }}</strong></td>
                 <td>{{ client.email|default:"-" }}</td>
                 <td>{{ client.phone|default:"-" }}</td>
@@ -59,4 +69,20 @@
     <p style="color: #7f8c8d; text-align: center; padding: 2rem;">No clients found.</p>
     {% endif %}
 </div>
+
+<script>
+function filterClients() {
+    const search = document.getElementById('searchFilter').value.toLowerCase();
+    const stage = document.getElementById('stageFilter').value;
+    const rows = document.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const rowStage = row.dataset.stage;
+        const matchesStage = !stage || rowStage === stage;
+        const matchesSearch = text.includes(search);
+        row.style.display = (matchesSearch && matchesStage) ? '' : 'none';
+    });
+}
+</script>
 {% endblock %}
