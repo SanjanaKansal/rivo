@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def login_api(request):
+def login(request):
     email = request.data.get('email')
     password = request.data.get('password')
     
@@ -16,17 +16,11 @@ def login_api(request):
         return Response({'error': 'Email and password required'}, status=status.HTTP_400_BAD_REQUEST)
     
     user = authenticate(request, email=email, password=password)
-    
-    if user is None:
+    if not user:
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
     token, _ = Token.objects.get_or_create(user=user)
-    
     return Response({
         'token': token.key,
-        'user': {
-            'id': user.id,
-            'email': user.email,
-            'name': user.get_full_name() or user.email,
-        }
+        'user': {'id': user.id, 'email': user.email, 'name': user.get_full_name() or user.email}
     })
